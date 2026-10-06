@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "WordAhead — 자막으로 배우는 영어",
+  "short_name": "WordAhead",
+  "description": "영상 자막을 읽고 나에게 필요한 영어 단어를 모아보세요.",
+  "lang": "ko-KR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#f5f6f8",
+  "icons": [
+    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
