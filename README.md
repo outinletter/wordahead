@@ -19,3 +19,10 @@
 YouTube 자막 자동 추출, 실제 재생목록 조회, 영상 제목 자동 조회는 구현하지 않았습니다. 샘플 제목과 자막은 데모용이며 실제 영상 자막이 아닙니다. 사전은 제한된 내장 어휘만 지원합니다. 개인화는 초기 규칙 기반 추천이며 검증된 실력 추정 모델은 아닙니다. 데이터는 브라우저 localStorage에 저장됩니다.
 
 Android/iOS 실제 기기 설치 및 발음 동작은 아직 검증하지 않았습니다.
+
+## 배포 및 iOS 등록 정보
+
+- 웹 배포: https://outinletter.github.io/wordahead/ (main 브랜치 GitHub Pages)
+- 등록한 iOS Bundle ID: `com.addvalue.wordahead`
+- 현재 저장소에는 iOS 프로젝트, 서명 및 App Store 업로드 설정이 없습니다. Bundle ID 등록만으로 iOS 빌드가 생성되지는 않습니다.
+- YouTube 링크 제출 동작을 실제 배포본에서 확인했습니다. 자막 입력 창이 열리고 입력란은 비어 있으며, 영어 자동 자막 수집은 구현되지 않았습니다.
