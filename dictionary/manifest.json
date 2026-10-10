@@ -1,0 +1,16 @@
+{
+  "entries": 1355421,
+  "koreanEntries": 15308,
+  "shards": 256,
+  "license": "CC-BY-SA-4.0",
+  "sources": {
+    "ko": {
+      "source": "https://kaikki.org/kowiktionary/raw-wiktextract-data.jsonl.gz",
+      "sha256Uncompressed": "8a7ff6b09e0661d0e29940c0b5ec9ccc4e5c7cc2bdf3aec184c873f5c264e63e"
+    },
+    "en": {
+      "source": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+      "sha256Uncompressed": "9978ce34256e4143c3498387564d293a9a2971ef376c1e038d369a2021c02195"
+    }
+  }
+}

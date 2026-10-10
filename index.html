@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="caption-api" content="https://wordahead-captions.outinletter.workers.dev/api/captions">
   <meta name="theme-color" content="#f5f6f8">
   <meta name="description" content="영상 자막으로 배우는 나만의 영어 단어장">
   <link rel="manifest" href="manifest.webmanifest">
@@ -24,8 +25,8 @@
 
     <main id="home-view" class="view">
       <section class="welcome-row">
-        <div><p class="eyebrow">MONDAY, OCTOBER 6</p><h1>오늘도 한 편, 내 영어로.</h1><p class="subhead">영상 자막을 읽고, 내게 필요한 단어를 모아보세요.</p></div>
-        <div class="streak"><span class="streak-icon">✦</span><span><strong>3일</strong><small>연속 학습</small></span></div>
+        <div><p class="eyebrow">ENGLISH, ONE WORD AT A TIME</p><h1>오늘도 한 편, 내 영어로.</h1><p class="subhead">영상 자막을 읽고, 내게 필요한 단어를 모아보세요.</p></div>
+        <div class="streak"><span class="streak-icon">✦</span><span><strong>한 편씩</strong><small>자막으로 배우는 영어</small></span></div>
       </section>
 
       <section class="import-card">
@@ -58,14 +59,16 @@
         <section class="transcript-panel"><div class="transcript-heading"><div><p class="eyebrow">FULL TRANSCRIPT</p><h1>자막을 읽어보세요</h1></div><div class="reading-tools"><button id="font-down" aria-label="글자 작게">A−</button><button id="font-up" aria-label="글자 크게">A＋</button><button id="transcript-menu" aria-label="더 보기">···</button></div></div><div id="transcript-content" class="transcript-content"></div></section>
       </div>
     </main>
-      <section id="word-sheet" class="word-sheet" hidden aria-live="polite"><button id="close-sheet" class="sheet-close" aria-label="닫기">×</button><div class="sheet-word-row"><div><span id="sheet-part" class="part-of-speech">NOUN</span><h2 id="sheet-word">word</h2></div><button id="speak-word" class="speak-button" aria-label="발음 듣기">◖))</button></div><p id="sheet-phonetic" class="phonetic">/wɜːrd/</p><p id="sheet-meaning" class="meaning">뜻이 여기에 표시됩니다.</p><div class="context-box"><span>IN THIS SENTENCE</span><p id="sheet-context"></p></div><div class="sheet-actions"><button id="mark-known" class="sheet-secondary">알고 있어요</button><button id="save-word" class="sheet-primary">단어장에 저장 <span>＋</span></button></div></section>
+      <section id="word-sheet" class="word-sheet" hidden aria-live="polite"><button id="close-sheet" class="sheet-close" aria-label="닫기">×</button><div class="sheet-word-row"><div><span id="sheet-part" class="part-of-speech">NOUN</span><h2 id="sheet-word">word</h2></div><button id="speak-word" class="speak-button" aria-label="발음 듣기">◖))</button></div><p id="sheet-phonetic" class="phonetic">/wɜːrd/</p><p id="sheet-meaning" class="meaning">뜻이 여기에 표시됩니다.</p><div class="context-box"><span>IN THIS SENTENCE</span><p id="sheet-context"></p></div><p class="dictionary-credit"><a id="dictionary-source" href="https://en.wiktionary.org/" target="_blank" rel="noopener">Wiktionary 원문</a> · <a href="dictionary/NOTICE.md" target="_blank" rel="noopener">CC BY-SA 4.0</a></p><div class="sheet-actions"><button id="mark-known" class="sheet-secondary">알고 있어요</button><button id="save-word" class="sheet-primary">단어장에 저장 <span>＋</span></button></div></section>
 
-    <footer class="footer"><span>WordAhead</span><span>자막으로 배우는 나만의 영어</span><span>도움말　·　개인정보</span></footer>
+    <footer class="footer"><span>WordAhead</span><span>자막으로 배우는 나만의 영어</span><span><a href="support.html">도움말</a>　·　<a href="privacy.html">개인정보</a></span></footer>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <dialog id="caption-dialog" class="modal"><form method="dialog" id="caption-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">START LEARNING</p><h2>자막으로 먼저 시작해요</h2><p class="modal-description">현재 버전은 YouTube 영어 자동 자막을 수집하지 않습니다. 직접 복사한 영어 자막을 붙여 넣거나 예시 자막으로 시작하세요.</p><label for="caption-title">영상 제목</label><input id="caption-title" placeholder="예: Why we love the ocean" value="내가 고른 영어 영상"><label for="caption-text">영어 자막</label><textarea id="caption-text" rows="7" placeholder="영어 자막을 붙여 넣으세요…"></textarea><div class="modal-sample-row"><button type="button" id="load-sample" class="text-button">예시 자막 불러오기</button><span>자막 데이터는 이 기기에 저장됩니다.</span></div><button type="submit" class="primary-button modal-submit">자막 읽기 시작 <span>→</span></button></form></dialog>
+  <dialog id="caption-dialog" class="modal"><form method="dialog" id="caption-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">START LEARNING</p><h2>자막으로 먼저 시작해요</h2><p class="modal-description">YouTube에서 자막을 제공하지 않거나 접근이 제한된 경우 직접 복사한 영어 자막으로 학습할 수 있습니다.</p><label for="caption-title">영상 제목</label><input id="caption-title" placeholder="예: Why we love the ocean" value="내가 고른 영어 영상"><label for="caption-text">영어 자막</label><textarea id="caption-text" rows="7" placeholder="영어 자막을 붙여 넣으세요…"></textarea><div class="modal-sample-row"><button type="button" id="load-sample" class="text-button">예시 자막 불러오기</button><span>자막 데이터는 이 기기에 저장됩니다.</span></div><button type="submit" class="primary-button modal-submit">자막 읽기 시작 <span>→</span></button></form></dialog>
   <dialog id="playlist-dialog" class="modal"><form method="dialog" id="playlist-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">PLAYLIST</p><h2>재생목록 불러오기</h2><p class="modal-description">재생목록 링크를 입력하면 목록과 자막 이용 가능 상태를 확인할 수 있어요. 현재 시제품은 실제 YouTube 데이터 연결 전이라 예시 목록을 보여줍니다.</p><input id="playlist-url" type="url" placeholder="YouTube 재생목록 URL"><button id="show-playlist-sample" type="button" class="primary-button modal-submit">목록 미리보기 <span>→</span></button><div id="playlist-results" class="playlist-results"></div></form></dialog>
   <dialog id="preview-dialog" class="modal preview-modal"><form method="dialog" id="preview-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">YOUR WORD AHEAD</p><h2>영상 전에 살펴볼 단어</h2><p class="modal-description">최근 학습 기록과 자막 속 반복 횟수로 고른 추천이에요. 아직 학습 기록이 적어 초기 추천 단계입니다.</p><div id="preview-words" class="preview-words"></div><button type="submit" class="primary-button modal-submit">자막 읽기로 돌아가기</button></form></dialog>
-  <script src="app.js?v=20261008"></script>
+  <script src="dictionary.js?v=20261008-3"></script>
+  <script src="captions.js?v=20261008"></script>
+  <script src="app.js?v=20261008-3"></script>
 </body>
 </html>
