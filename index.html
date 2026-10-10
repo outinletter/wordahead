@@ -8,7 +8,7 @@
   <meta name="description" content="영상 자막으로 배우는 나만의 영어 단어장">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261010-2">
+  <link rel="stylesheet" href="styles.css?v=20261010-3">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -56,7 +56,7 @@
       <div class="reader-top"><button id="back-home" class="back-button">← <span>내 학습</span></button><div class="reader-video-title"><span class="live-dot"></span><span id="reader-title">영상 자막</span></div><button id="reader-save" class="icon-button" aria-label="단어장 보기">▤</button></div>
       <div class="reader-progress"><span id="read-progress"></span></div>
       <div class="reader-layout"><aside class="video-side"><div class="video-preview" id="reader-thumbnail"><span class="play-triangle"></span><span class="duration">12:48</span></div><p class="eyebrow">READING TRANSCRIPT</p><h2 id="side-title">영상 제목</h2><p id="side-meta" class="side-meta">영어 자막 · 전체 스크립트</p><div class="side-divider"></div><div class="side-stat"><span>자막 문장</span><strong id="sentence-count">0</strong></div><div class="side-stat"><span>새로운 단어</span><strong id="new-word-count">0</strong></div><button id="make-list-button" class="primary-button full-button">맞춤 단어장 미리보기 <span>→</span></button><p class="side-note">단어를 클릭해 뜻과 발음을 확인해보세요.</p></aside>
-        <section class="transcript-panel"><div class="transcript-heading"><h1>영어 자막</h1><div class="reading-tools" aria-label="자막 글자 크기"><button id="font-down" aria-label="글자 작게">A−</button><output id="font-size" aria-live="polite">20</output><button id="font-up" aria-label="글자 크게">A＋</button><button id="font-reset" aria-label="글자 크기 기본값으로">기본</button></div></div><div id="transcript-content" class="transcript-content"></div></section>
+        <section class="transcript-panel"><div class="transcript-heading"><h1>영어 자막</h1><div class="reading-tools" aria-label="자막 글자 크기"><button id="font-down" aria-label="글자 작게">A−</button><output id="font-size" aria-live="polite">20</output><button id="font-up" aria-label="글자 크게">A＋</button><button id="font-reset" aria-label="글자 크기 기본값으로">기본</button></div></div><details class="recommendations" open><summary id="recommended-summary">먼저 살펴볼 단어</summary><p id="recommended-note"></p><div id="recommended-words"></div><button class="text-button" id="recommend-preview">뜻과 학습 상태 확인 →</button></details><div id="transcript-content" class="transcript-content"></div></section>
       </div>
     </main>
       <section id="word-sheet" class="word-sheet" hidden aria-label="단어 뜻" aria-live="polite"><button id="close-sheet" class="sheet-close" aria-label="닫기">×</button><div class="sheet-word-row"><h2 id="sheet-word">word</h2><span id="sheet-part" class="part-of-speech">NOUN</span><button id="speak-word" class="speak-button" aria-label="발음 듣기">◖))</button></div><p id="sheet-phonetic" class="phonetic">/wɜːrd/</p><p id="sheet-meaning" class="meaning">뜻이 여기에 표시됩니다.</p><details class="context-box"><summary>문맥 · 사전 출처</summary><p id="sheet-context"></p><p class="dictionary-credit"><a id="dictionary-source" href="https://en.wiktionary.org/" target="_blank" rel="noopener">Wiktionary 원문</a> · <a href="dictionary/NOTICE.md" target="_blank" rel="noopener">CC BY-SA 4.0</a></p></details><div class="sheet-actions"><label class="known-toggle"><input id="mark-known" type="checkbox">알고 있어요</label><button id="save-word" class="sheet-primary">단어장에 저장 <span>＋</span></button></div></section>
@@ -66,9 +66,9 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <dialog id="caption-dialog" class="modal"><form method="dialog" id="caption-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">START LEARNING</p><h2>자막으로 먼저 시작해요</h2><p class="modal-description">YouTube에서 자막을 제공하지 않거나 접근이 제한된 경우 직접 복사한 영어 자막으로 학습할 수 있습니다.</p><label for="caption-title">영상 제목</label><input id="caption-title" placeholder="예: Why we love the ocean" value="내가 고른 영어 영상"><label for="caption-text">영어 자막</label><textarea id="caption-text" rows="7" placeholder="영어 자막을 붙여 넣으세요…"></textarea><div class="modal-sample-row"><button type="button" id="load-sample" class="text-button">예시 자막 불러오기</button><span>자막 데이터는 이 기기에 저장됩니다.</span></div><button type="submit" class="primary-button modal-submit">자막 읽기 시작 <span>→</span></button></form></dialog>
   <dialog id="playlist-dialog" class="modal"><form method="dialog" id="playlist-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">PLAYLIST</p><h2>재생목록 불러오기</h2><p class="modal-description">재생목록 링크를 입력하면 목록과 자막 이용 가능 상태를 확인할 수 있어요. 현재 시제품은 실제 YouTube 데이터 연결 전이라 예시 목록을 보여줍니다.</p><input id="playlist-url" type="url" placeholder="YouTube 재생목록 URL"><button id="show-playlist-sample" type="button" class="primary-button modal-submit">목록 미리보기 <span>→</span></button><div id="playlist-results" class="playlist-results"></div></form></dialog>
-  <dialog id="preview-dialog" class="modal preview-modal"><form method="dialog" id="preview-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">YOUR WORD AHEAD</p><h2>영상 전에 살펴볼 단어</h2><p class="modal-description">최근 학습 기록과 자막 속 반복 횟수로 고른 추천이에요. 아직 학습 기록이 적어 초기 추천 단계입니다.</p><div id="preview-words" class="preview-words"></div><button type="submit" class="primary-button modal-submit">자막 읽기로 돌아가기</button></form></dialog>
-  <script src="dictionary.js?v=20261010-1"></script>
-  <script src="captions.js?v=20261008"></script>
-  <script src="app.js?v=20261010-2"></script>
+  <dialog id="preview-dialog" class="modal preview-modal"><form method="dialog" id="preview-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">YOUR WORD AHEAD</p><h2>영상 전에 살펴볼 단어</h2><p id="preview-description" class="modal-description"></p><div id="preview-words" class="preview-words"></div><button type="submit" class="primary-button modal-submit">자막 읽기로 돌아가기</button></form></dialog>
+  <script src="dictionary.js?v=20261010-3"></script>
+  <script src="captions.js?v=20261010-3"></script>
+  <script src="app.js?v=20261010-3"></script>
 </body>
 </html>
