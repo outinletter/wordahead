@@ -23,6 +23,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name:"captions")
         config.userContentController.add(self, name:"speak")
+        config.userContentController.add(self, name:"vocabularyExport")
         web = WKWebView(frame:.zero, configuration:config)
         web.navigationDelegate = self
         web.translatesAutoresizingMaskIntoConstraints = false
@@ -49,6 +50,13 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
+        if message.name == "vocabularyExport",let text=message.body as? String,let data=text.data(using:.utf8),data.count <= 5_000_000 {
+            do {
+                let url=FileManager.default.temporaryDirectory.appendingPathComponent("WordAhead-known-words.json")
+                try data.write(to:url,options:.atomic)
+                present(UIDocumentPickerViewController(forExporting:[url],asCopy:true),animated:true)
+            } catch {web.evaluateJavaScript("notify('어휘 백업 파일을 저장할 수 없습니다.')",completionHandler:nil)}
+        }
         if message.name == "speak", let word = message.body as? String {
             let utterance = AVSpeechUtterance(string:word)
             utterance.voice = AVSpeechSynthesisVoice(language:"en-US")

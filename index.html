@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261010-arrow" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261010-arrow">
-  <link rel="stylesheet" href="styles.css?v=20261010-5">
+  <link rel="stylesheet" href="styles.css?v=20261011-1">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -48,6 +48,7 @@
     </main>
 
     <main id="library-view" class="view" hidden>
+      <div class="vocabulary-backup"><button id="export-known" class="outline-button">체크 어휘 백업 저장</button><label class="outline-button">체크 어휘 불러오기<input id="import-known" type="file" accept=".json,application/json" hidden></label><p>초기화 전 파일 앱에 백업하세요. 다시 불러오면 추천에서 제외됩니다. 직접 단어장에 저장하는 것은 가능합니다.</p></div>
       <section class="welcome-row compact"><div><p class="eyebrow">YOUR VOCABULARY</p><h1>내 단어장</h1><p class="subhead">영상에서 발견한 단어를 모아 복습해요.</p></div><button id="review-button" class="primary-button">오늘 복습하기 <span>→</span></button></section>
       <section class="stats-row"><div class="stat-card"><span>저장한 단어</span><strong id="stat-total">0</strong><small>나만의 어휘</small></div><div class="stat-card"><span>익히는 중</span><strong id="stat-learning">0</strong><small>복습이 필요해요</small></div><div class="stat-card"><span>알고 있어요</span><strong id="stat-known">0</strong><small>잘하고 있어요</small></div></section>
       <section class="word-list-card"><div class="list-toolbar"><div><h2>저장한 단어</h2><p id="library-caption">단어를 선택하면 뜻과 문맥을 다시 볼 수 있어요.</p></div><select id="word-filter" aria-label="단어 필터"><option value="all">모든 단어</option><option value="learning">익히는 중</option><option value="known">알고 있어요</option></select></div><div id="saved-words" class="saved-words"></div></section>
@@ -70,6 +71,6 @@
   <main id="preview-dialog" class="view preview-page" hidden><header class="preview-header"><h1>먼저 살펴볼 단어</h1><button id="close-preview" aria-label="닫고 기본 화면으로 돌아가기">닫기 ×</button></header><p id="preview-video-title"></p><div id="preview-words" class="preview-words" role="list" aria-label="단어와 뜻"></div></main>
   <script src="dictionary.js?v=20261010-3"></script>
   <script src="captions.js?v=20261010-3"></script>
-  <script src="app.js?v=20261010-5"></script>
+  <script src="app.js?v=20261011-1"></script>
 </body>
 </html>
