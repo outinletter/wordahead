@@ -28,6 +28,10 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.translatesAutoresizingMaskIntoConstraints = false
         web.isOpaque = false
         web.backgroundColor = view.backgroundColor
+        let backSwipe = UIScreenEdgePanGestureRecognizer(target:self,action:#selector(swipeBack(_:)))
+        backSwipe.edges = .left
+        web.addGestureRecognizer(backSwipe)
+        web.scrollView.panGestureRecognizer.require(toFail:backSwipe)
         view.addSubview(web)
         NSLayoutConstraint.activate([
             web.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),
@@ -38,6 +42,11 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         if let root = Bundle.main.url(forResource:"Web",withExtension:nil) {
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
         }
+    }
+    @objc private func swipeBack(_ gesture:UIScreenEdgePanGestureRecognizer) {
+        guard gesture.state == .ended,gesture.translation(in:web).x > 64 else {return}
+        speaker.stopSpeaking(at:.immediate)
+        web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
         if message.name == "speak", let word = message.body as? String {
