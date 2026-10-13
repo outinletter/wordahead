@@ -1,0 +1,38 @@
+Hello App Review Team,
+
+Thank you for requesting additional information about WordAhead.
+
+1. Physical-device screen recording
+Recording: [INSERT ACCESSIBLE RECORDING URL OR ATTACHMENT NAME]
+Device: [MODEL]; operating system: [LATEST RELEASE VERSION]; app version/build: [ACTUAL SUBMITTED VERSION AND BUILD].
+[After testing, describe the actual completed physical-device QA here.]
+The recording begins with launching the app and demonstrates reading a sample transcript, looking up and listening to words, saving and reviewing vocabulary, marking familiar words, previewing personalized vocabulary, entering a transcript, and exporting/importing familiar-word backups. Include the YouTube import flow if it remains in the submitted build.
+The app has no account registration/login, public content sharing, in-app purchases, subscriptions, or paid feature unlocks. User-entered transcripts are stored locally and are not published to other users.
+
+2. Purpose and target audience
+WordAhead helps English learners, particularly users who prefer Korean guidance, understand English transcripts and build a personal vocabulary list. Learners can check word meanings and pronunciation, save words in context, and review unfamiliar vocabulary. Recommendations use local learning history and rules; they do not use an external AI service or claim to measure proficiency.
+
+3. Access and main features
+No login credentials or setup files are required.
+Launch the app and open one of the included practice transcripts. Tap an English word to see its definition and pronunciation. Tap the speaker button to hear it, and tap + to save it. Mark familiar words using the checkbox. Open “내 단어장” to review/filter/delete saved words. Use “먼저 살펴볼 단어” to preview unfamiliar vocabulary.
+Use “자막 직접 붙여넣기” to enter a transcript that you own or have permission to use, or select “예시 자막 불러오기” for the included sample. Familiar-word backups can be exported/imported as JSON; these are not full transcript/vocabulary backups. “학습 데이터 삭제” clears local learning records after confirmation.
+YouTube links can request available English captions. Private, restricted, unavailable or captionless videos may fail; the error screen offers manual transcript input. This app does not play videos or retrieve playlists.
+
+4. External services and tools
+- YouTube: caption requests and thumbnails. The iOS app requests captions directly from the device; the web version uses a Cloudflare Worker proxy. Caption requests currently use YouTube's internal player endpoint, not an official caption API. [Confirm authorization/terms basis and attach evidence, or revise/remove this feature before submission.]
+- Wikimedia Wiktionary: online word definitions; local dictionary fallback is provided.
+- Kaikki.org/Wiktextract: source extraction for the bundled Wiktionary dictionary. License and provenance: dictionary/NOTICE.md and dictionary/manifest.json.
+- Unsplash: illustrative sample images, not actual videos.
+- Apple AVSpeechSynthesizer on iOS / browser speech synthesis on the web: pronunciation.
+- GitHub Pages: web/support/privacy hosting.
+No third-party authentication, payment processor, advertising/analytics SDK, or external AI service is implemented.
+
+5. Regional behavior
+The app does not intentionally enable different core learning features by region. The interface primarily uses Korean with English learning content. External YouTube/Wiktionary access, available captions, and system English voices can vary by region, network and device settings. Included transcripts, local vocabulary storage and the bundled dictionary provide the core learning path without requiring successful caption imports.
+
+6. Regulated services and third-party materials
+The app does not provide regulated medical, financial or similar professional services.
+Bundled dictionary definitions and IPA are adapted from English/Korean Wiktionary contributors via Kaikki.org and Wiktextract under CC BY-SA 4.0. Attribution, license links, transformations and source checksums are included in dictionary/NOTICE.md and dictionary/manifest.json; word details link to the original entries.
+Included practice transcripts are identified as samples and are not represented as actual YouTube transcripts. [Confirm rights to these texts and images. Attach any required authorization for third-party caption functionality/content. Public availability alone is not authorization.]
+
+We have also added this information to the App Review Information Notes field. [Use this sentence only after doing so.]

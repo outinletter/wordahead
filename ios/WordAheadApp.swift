@@ -44,6 +44,12 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
         }
     }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        let alert = UIAlertController(title: "화면을 열 수 없습니다", message: "앱을 다시 시작하거나 잠시 후 다시 시도해주세요.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "확인", style: .default))
+        present(alert, animated: true)
+    }
     @objc private func swipeBack(_ gesture:UIScreenEdgePanGestureRecognizer) {
         guard gesture.state == .ended,gesture.translation(in:web).x > 64 else {return}
         speaker.stopSpeaking(at:.immediate)
@@ -77,7 +83,17 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
         guard let url=action.request.url else {decisionHandler(.cancel);return}
-        if url.isFileURL {decisionHandler(.allow);return}
+        if url.isFileURL {
+            guard let root = Bundle.main.url(forResource:"Web",withExtension:nil),
+                  url.standardizedFileURL.path.hasPrefix(root.standardizedFileURL.path + "/") else {
+                decisionHandler(.cancel);return
+            }
+            if action.navigationType == .linkActivated {
+                webView.loadFileURL(url,allowingReadAccessTo:root)
+                decisionHandler(.cancel);return
+            }
+            decisionHandler(.allow);return
+        }
         if ["https","http","mailto"].contains(url.scheme ?? "") {UIApplication.shared.open(url)}
         decisionHandler(.cancel)
     }
