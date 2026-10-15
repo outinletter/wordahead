@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261010-arrow" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261010-arrow">
-  <link rel="stylesheet" href="styles.css?v=20261015-5">
+  <link rel="stylesheet" href="styles.css?v=20261015-6">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -56,6 +56,7 @@
 
     <main id="reader-view" class="reader-view" hidden>
       <div class="reader-top"><button id="back-home" class="back-button">← <span>내 학습</span></button><div class="reader-video-title"><span class="live-dot"></span><span id="reader-title">영상 자막</span></div><button id="reader-save" class="icon-button" aria-label="단어장 보기">▤</button></div>
+      <section id="youtube-player-host" class="youtube-player-host" aria-label="YouTube 영상 플레이어" hidden></section>
       <div class="reader-progress"><span id="read-progress"></span></div>
       <div class="reader-layout"><aside class="video-side"><div class="video-preview" id="reader-thumbnail"><span class="play-triangle"></span><span class="duration">12:48</span></div><p class="eyebrow">READING TRANSCRIPT</p><h2 id="side-title">영상 제목</h2><p id="side-meta" class="side-meta">영어 자막 · 전체 스크립트</p><div class="side-divider"></div><div class="side-stat"><span>자막 문장</span><strong id="sentence-count">0</strong></div><div class="side-stat"><span>새로운 단어</span><strong id="new-word-count">0</strong></div><button id="make-list-button" class="primary-button full-button">맞춤 단어장 미리보기 <span>→</span></button><p class="side-note">단어를 클릭해 뜻과 발음을 확인해보세요.</p></aside>
         <section class="transcript-panel"><div class="transcript-heading"><h1>영어 자막</h1><div class="reading-tools" aria-label="자막 글자 크기"><button id="font-down" aria-label="글자 작게">A−</button><output id="font-size" aria-live="polite">20</output><button id="font-up" aria-label="글자 크게">A＋</button><button id="font-reset" aria-label="글자 크기 기본값으로">기본</button></div></div><button class="recommendations" id="recommend-preview">먼저 살펴볼 단어 →</button><div id="transcript-content" class="transcript-content"></div></section>
@@ -73,6 +74,7 @@
   <script src="dictionary/basic-vocabulary.js?v=20261015-5"></script>
   <script src="dictionary.js?v=20261015-5"></script>
   <script src="captions.js?v=20261010-3"></script>
-  <script src="app.js?v=20261015-5"></script>
+  <script src="video-player.js?v=20261015-6"></script>
+  <script src="app.js?v=20261015-6"></script>
 </body>
 </html>

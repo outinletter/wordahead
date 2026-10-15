@@ -14,8 +14,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
-final class ReaderController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate {
+final class ReaderController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     private var web: WKWebView!
+    private var playerWeb: WKWebView!
+    private var playerHeight: NSLayoutConstraint!
+    private var playerLoaded = false
+    private var playerRequested = false
+    private var playerVideoID: String?
+    private var playerCommand: [String:Any]?
     private let speaker = AVSpeechSynthesizer()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,6 +30,18 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         config.userContentController.add(self, name:"captions")
         config.userContentController.add(self, name:"speak")
         config.userContentController.add(self, name:"vocabularyExport")
+        config.userContentController.add(self, name:"youtubePlayer")
+        let playerConfig = WKWebViewConfiguration()
+        playerConfig.allowsInlineMediaPlayback = true
+        playerConfig.mediaTypesRequiringUserActionForPlayback = []
+        playerWeb = WKWebView(frame:.zero,configuration:playerConfig)
+        playerWeb.navigationDelegate = self
+        playerWeb.uiDelegate = self
+        playerWeb.translatesAutoresizingMaskIntoConstraints = false
+        playerWeb.scrollView.isScrollEnabled = false
+        playerWeb.isHidden = true
+        view.addSubview(playerWeb)
+        playerHeight = playerWeb.heightAnchor.constraint(equalToConstant:0)
         web = WKWebView(frame:.zero, configuration:config)
         web.navigationDelegate = self
         web.translatesAutoresizingMaskIntoConstraints = false
@@ -35,14 +53,90 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.scrollView.panGestureRecognizer.require(toFail:backSwipe)
         view.addSubview(web)
         NSLayoutConstraint.activate([
-            web.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),
+            playerWeb.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),
+            playerWeb.leadingAnchor.constraint(equalTo:view.leadingAnchor),
+            playerWeb.trailingAnchor.constraint(equalTo:view.trailingAnchor),
+            playerHeight,
+            web.topAnchor.constraint(equalTo:playerWeb.bottomAnchor),
             web.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),
             web.leadingAnchor.constraint(equalTo:view.leadingAnchor),
             web.trailingAnchor.constraint(equalTo:view.trailingAnchor)
         ])
+        NotificationCenter.default.addObserver(self,selector:#selector(pauseYouTube),name:UIApplication.willResignActiveNotification,object:nil)
         if let root = Bundle.main.url(forResource:"Web",withExtension:nil) {
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
         }
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["WORDAHEAD_PLAYER_SMOKE_TEST"] == "1" {
+            handleYouTube(["action":"show","videoId":"M7lc1UVf-VE"])
+            checkPlayerSmokeTest()
+        }
+        #endif
+    }
+    #if DEBUG
+    private func checkPlayerSmokeTest(attempt:Int=0,phase:Int=0){
+        guard attempt < 30 else {print("WORDAHEAD_PLAYER_TEST FAIL: player did not reach the requested playing position");pauseYouTube();showYouTube(false);return}
+        playerWeb.evaluateJavaScript("typeof WordAheadYouTube === 'object' ? WordAheadYouTube.getState() : null") { [weak self] value,_ in
+            guard let self = self else {return}
+            var next = phase
+            if let state = value as? [String:Any],state["ready"] as? Bool == true {
+                let time = state["time"] as? Double ?? 0
+                let playing = (state["state"] as? Int) == 1
+                if phase == 0 {
+                    self.handleYouTube(["action":"seek","videoId":"M7lc1UVf-VE","start":12.0,"play":true]);next = 1
+                    print("WORDAHEAD_PLAYER_TEST ready; seeking 12s")
+                }else if phase == 1,playing,time >= 11.5,time < 35 {
+                    self.handleYouTube(["action":"seek","videoId":"M7lc1UVf-VE","start":42.0,"play":true]);next = 2
+                    print("WORDAHEAD_PLAYER_TEST first seek playing at \(time); seeking 42s")
+                }else if phase == 2,playing,time >= 40,time < 65 {
+                    print("WORDAHEAD_PLAYER_TEST PASS: native inline playback and seek verified at \(time)")
+                    self.pauseYouTube();self.showYouTube(false);return
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline:.now()+2) { [weak self] in self?.checkPlayerSmokeTest(attempt:attempt+1,phase:next) }
+        }
+    }
+    #endif
+    deinit {NotificationCenter.default.removeObserver(self)}
+    private func showYouTube(_ visible:Bool){
+        playerWeb.isHidden = !visible
+        playerHeight.constant = visible ? min(290,max(230,view.bounds.width*9/16+32)) : 0
+        view.layoutIfNeeded()
+    }
+    @objc private func pauseYouTube(){
+        if var command = playerCommand {command["play"] = false;playerCommand = command}
+        if playerLoaded {playerWeb.evaluateJavaScript("WordAheadYouTube.load({action:'pause'})",completionHandler:nil)}
+    }
+    private func sendPlayerCommand(){
+        guard playerLoaded,let command = playerCommand,
+              let data = try? JSONSerialization.data(withJSONObject:command),
+              let json = String(data:data,encoding:.utf8) else {return}
+        playerWeb.evaluateJavaScript("WordAheadYouTube.load(\(json))",completionHandler:nil)
+    }
+    private func handleYouTube(_ data:[String:Any]){
+        guard let action = data["action"] as? String else {return}
+        if action == "pause" {pauseYouTube();return}
+        if action == "hide" {pauseYouTube();showYouTube(false);return}
+        guard ["show","seek","load"].contains(action),let id = data["videoId"] as? String,
+              id.range(of:"^[A-Za-z0-9_-]{11}$",options:.regularExpression) != nil else {return}
+        showYouTube(true)
+        let changed = playerVideoID != id
+        if action != "show" || changed {
+            let start = (data["start"] as? Double) ?? 0
+            guard start.isFinite,start >= 0 else {return}
+            playerVideoID = id
+            playerCommand = ["action":action == "seek" ? "seek" : "load","videoId":id,"start":start,"play":data["play"] as? Bool ?? false]
+        }
+        if !playerRequested {
+            guard let url = Bundle.main.url(forResource:"youtube-player",withExtension:"html",subdirectory:"Web"),
+                  let html = try? String(contentsOf:url,encoding:.utf8),
+                  let base = URL(string:"https://\((Bundle.main.bundleIdentifier ?? "com.addvalue.wordahead").lowercased())/") else {return}
+            playerRequested = true
+            playerWeb.loadHTMLString(html,baseURL:base)
+        }else if action != "show" || changed {sendPlayerCommand()}
+    }
+    func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){
+        if webView === playerWeb {playerLoaded = true;sendPlayerCommand()}
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
@@ -56,6 +150,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
+        if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
         if message.name == "vocabularyExport",let text=message.body as? String,let data=text.data(using:.utf8),data.count <= 5_000_000 {
             do {
                 let url=FileManager.default.temporaryDirectory.appendingPathComponent("WordAhead-known-words.json")
@@ -64,6 +159,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             } catch {web.evaluateJavaScript("notify('어휘 백업 파일을 저장할 수 없습니다.')",completionHandler:nil)}
         }
         if message.name == "speak", let word = message.body as? String {
+            pauseYouTube()
             let utterance = AVSpeechUtterance(string:word)
             utterance.voice = AVSpeechSynthesisVoice(language:"en-US")
             utterance.rate = 0.43
@@ -83,6 +179,14 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
         guard let url=action.request.url else {decisionHandler(.cancel);return}
+        if webView === playerWeb {
+            let host = url.host?.lowercased() ?? ""
+            let embedded = ["youtube.com","youtube-nocookie.com","google.com"].contains {host == $0 || host.hasSuffix("."+$0)}
+            let appHost = (Bundle.main.bundleIdentifier ?? "com.addvalue.wordahead").lowercased()
+            if url.absoluteString == "about:blank" || (url.scheme == "https" && (host == appHost || (action.targetFrame?.isMainFrame == false && embedded))) {decisionHandler(.allow);return}
+            if action.navigationType == .linkActivated,["https","http"].contains(url.scheme ?? "") {UIApplication.shared.open(url)}
+            decisionHandler(.cancel);return
+        }
         if url.isFileURL {
             guard let root = Bundle.main.url(forResource:"Web",withExtension:nil),
                   url.standardizedFileURL.path.hasPrefix(root.standardizedFileURL.path + "/") else {
@@ -96,6 +200,10 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         }
         if ["https","http","mailto"].contains(url.scheme ?? "") {UIApplication.shared.open(url)}
         decisionHandler(.cancel)
+    }
+    func webView(_ webView:WKWebView,createWebViewWith configuration:WKWebViewConfiguration,for action:WKNavigationAction,windowFeatures:WKWindowFeatures)->WKWebView? {
+        if action.targetFrame == nil,let url = action.request.url,["https","http"].contains(url.scheme ?? "") {UIApplication.shared.open(url)}
+        return nil
     }
 }
 
