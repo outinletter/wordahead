@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261010-arrow" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261010-arrow">
-  <link rel="stylesheet" href="styles.css?v=20261013-1">
+  <link rel="stylesheet" href="styles.css?v=20261015-4">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -63,7 +63,7 @@
     </main>
       <section id="word-sheet" class="word-sheet" hidden aria-label="단어 뜻" aria-live="polite"><button id="close-sheet" class="sheet-close" aria-label="닫기">×</button><div class="sheet-word-row"><label class="known-toggle"><input id="mark-known" type="checkbox" aria-label="알고 있는 단어로 표시"></label><h2 id="sheet-word">word</h2><button id="save-word" class="sheet-primary" aria-label="단어장에 추가" title="단어장에 추가">+</button><span id="sheet-part" class="part-of-speech">NOUN</span><button id="speak-word" class="speak-button" aria-label="발음 듣기">◖))</button></div><p id="sheet-phonetic" class="phonetic">/wɜːrd/</p><p id="sheet-meaning" class="meaning">뜻이 여기에 표시됩니다.</p><details class="context-box"><summary>문맥 · 사전 출처</summary><p id="sheet-context"></p><p class="dictionary-credit"><a id="dictionary-source" href="https://en.wiktionary.org/" target="_blank" rel="noopener">Wiktionary 원문</a> · <a href="dictionary/NOTICE.md" target="_blank" rel="noopener">CC BY-SA 4.0</a></p></details></section>
 
-    <dialog id="reset-dialog" class="modal"><form method="dialog"><h2>이 기기의 학습 데이터 삭제</h2><p>추가한 자막, 저장한 단어, 알고 있는 어휘, 학습 기록과 읽기 위치를 삭제합니다. 예시 자막은 다시 표시됩니다. 체크 어휘 백업에는 저장한 단어와 자막이 포함되지 않습니다.</p><button value="cancel" class="outline-button">취소</button><button id="confirm-reset" type="button" class="primary-button">전체 학습 데이터 삭제</button></form></dialog>
+    <dialog id="delete-video-dialog" class="modal" aria-labelledby="delete-video-title"><form method="dialog"><h2 id="delete-video-title">영상을 삭제할까요?</h2><p>목록의 영상과 자막을 삭제합니다. 저장한 단어는 유지됩니다.</p><div class="delete-video-actions"><button value="cancel" class="outline-button">취소</button><button id="confirm-video-delete" type="button" class="primary-button">삭제 확인</button></div></form></dialog><dialog id="reset-dialog" class="modal"><form method="dialog"><h2>이 기기의 학습 데이터 삭제</h2><p>추가한 자막, 저장한 단어, 알고 있는 어휘, 학습 기록과 읽기 위치를 삭제합니다. 예시 자막은 다시 표시됩니다. 체크 어휘 백업에는 저장한 단어와 자막이 포함되지 않습니다.</p><button value="cancel" class="outline-button">취소</button><button id="confirm-reset" type="button" class="primary-button">전체 학습 데이터 삭제</button></form></dialog>
     <footer class="footer"><span>WordAhead</span><span>자막으로 배우는 나만의 영어</span><span><a href="support.html">도움말</a>　·　<a href="privacy.html">개인정보</a>　·　<button id="reset-data" class="text-button">학습 데이터 삭제</button></span></footer>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -72,6 +72,6 @@
   <main id="preview-dialog" class="view preview-page" hidden><header class="preview-header"><h1>먼저 살펴볼 단어</h1><button id="close-preview" aria-label="닫고 기본 화면으로 돌아가기">닫기 ×</button></header><p id="preview-video-title"></p><div id="preview-words" class="preview-words" role="list" aria-label="단어와 뜻"></div></main>
   <script src="dictionary.js?v=20261010-3"></script>
   <script src="captions.js?v=20261010-3"></script>
-  <script src="app.js?v=20261013-1"></script>
+  <script src="app.js?v=20261015-4"></script>
 </body>
 </html>
