@@ -47,6 +47,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.translatesAutoresizingMaskIntoConstraints = false
         web.isOpaque = false
         web.backgroundColor = view.backgroundColor
+        web.scrollView.contentInsetAdjustmentBehavior = .never
         let backSwipe = UIScreenEdgePanGestureRecognizer(target:self,action:#selector(swipeBack(_:)))
         backSwipe.edges = .left
         web.addGestureRecognizer(backSwipe)
@@ -58,7 +59,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             playerWeb.trailingAnchor.constraint(equalTo:view.trailingAnchor),
             playerHeight,
             web.topAnchor.constraint(equalTo:playerWeb.bottomAnchor),
-            web.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),
+            web.bottomAnchor.constraint(equalTo:view.bottomAnchor),
             web.leadingAnchor.constraint(equalTo:view.leadingAnchor),
             web.trailingAnchor.constraint(equalTo:view.trailingAnchor)
         ])
@@ -145,7 +146,8 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         present(alert, animated: true)
     }
     @objc private func swipeBack(_ gesture:UIScreenEdgePanGestureRecognizer) {
-        guard gesture.state == .ended,gesture.translation(in:web).x > 64 else {return}
+        let movement = gesture.translation(in:web)
+        guard gesture.state == .ended,movement.x > 64,abs(movement.y) < movement.x*0.6 else {return}
         speaker.stopSpeaking(at:.immediate)
         web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
