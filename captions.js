@@ -1,7 +1,7 @@
 const WordAheadCaptions = {
   requests: new Map(),
   async open(video) {
-    saveReaderPosition();activeVideo=video;setView('reader');setWordSheet(false);$('#reader-title').title=video.title;$('#read-progress').style.width='0%';
+    activeVideo=video;setView('reader');
     $('.recommendations').hidden=true;
     $('#reader-title').textContent=video.title;
     $('#transcript-content').innerHTML='<p class="empty-state" role="status">영어 자막을 수집하고 있어요…</p>';
