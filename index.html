@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261010-arrow" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261010-arrow">
-  <link rel="stylesheet" href="styles.css?v=20261015-4">
+  <link rel="stylesheet" href="styles.css?v=20261015-5">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -70,8 +70,9 @@
   <dialog id="caption-dialog" class="modal"><form method="dialog" id="caption-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">START LEARNING</p><h2>자막으로 먼저 시작해요</h2><p class="modal-description">YouTube에서 자막을 제공하지 않거나 접근이 제한된 경우 직접 작성했거나 사용할 권한이 있는 영어 자막으로 학습할 수 있습니다.</p><label for="caption-title">영상 제목</label><input id="caption-title" placeholder="예: Why we love the ocean" value="내가 고른 영어 영상"><label for="caption-text">영어 자막</label><textarea id="caption-text" rows="7" placeholder="영어 자막을 붙여 넣으세요…"></textarea><div class="modal-sample-row"><button type="button" id="load-sample" class="text-button">예시 자막 불러오기</button><span>자막 데이터는 이 기기에 저장됩니다.</span></div><button type="submit" class="primary-button modal-submit">자막 읽기 시작 <span>→</span></button></form></dialog>
   <dialog id="playlist-dialog" class="modal"><form method="dialog" id="playlist-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">PLAYLIST</p><h2>재생목록 불러오기</h2><p class="modal-description">재생목록 링크를 입력하면 목록과 자막 이용 가능 상태를 확인할 수 있어요. 현재 시제품은 실제 YouTube 데이터 연결 전이라 예시 목록을 보여줍니다.</p><input id="playlist-url" type="url" placeholder="YouTube 재생목록 URL"><button id="show-playlist-sample" type="button" class="primary-button modal-submit">목록 미리보기 <span>→</span></button><div id="playlist-results" class="playlist-results"></div></form></dialog>
   <main id="preview-dialog" class="view preview-page" hidden><header class="preview-header"><h1>먼저 살펴볼 단어</h1><button id="close-preview" aria-label="닫고 기본 화면으로 돌아가기">닫기 ×</button></header><p id="preview-video-title"></p><div id="preview-words" class="preview-words" role="list" aria-label="단어와 뜻"></div></main>
-  <script src="dictionary.js?v=20261010-3"></script>
+  <script src="dictionary/basic-vocabulary.js?v=20261015-5"></script>
+  <script src="dictionary.js?v=20261015-5"></script>
   <script src="captions.js?v=20261010-3"></script>
-  <script src="app.js?v=20261015-4"></script>
+  <script src="app.js?v=20261015-5"></script>
 </body>
 </html>

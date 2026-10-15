@@ -20,3 +20,22 @@ definitions are included. Exact source checksums and entry counts are in manifes
 
 Each word sheet links to the original Wiktionary entry and its contributor history.
 The dictionary data license is separate from the application source code.
+
+## Basic vocabulary recommendation filter
+
+`basic-vocabulary.js` is adapted from the New General Service List (NGSL) 1.2
+by Charles Browne, Brent Culligan, and Joseph Phillips, under CC BY-SA 4.0.
+It contains 2,809 headwords and their published inflected forms, plus the
+supplementary number, month and weekday list. These are used only as a string
+exclusion filter, not as definitions or a proficiency assessment.
+
+- Official project: https://www.newgeneralservicelist.com/new-general-service-list
+- Source: https://www.newgeneralservicelist.com/s/NGSL_12_lemmatized_for_research.csv
+- Supplement: https://www.newgeneralservicelist.com/s/SUP_lemmatized.csv
+- License: https://creativecommons.org/licenses/by-sa/4.0/
+
+Changes: removed comments and blank fields; lowercased, deduplicated and sorted
+word forms; packaged as a JavaScript Set. The derived word list retains
+CC BY-SA 4.0. NGSL is a general English vocabulary list, not an official Korean
+high-school grade-1 curriculum list. It serves as an approximate baseline for
+excluding basic vocabulary in this app. All list data is bundled for offline use.

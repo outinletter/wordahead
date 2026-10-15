@@ -20,12 +20,13 @@ YouTube links can request available English captions. Private, restricted, unava
 
 4. External services and tools
 - YouTube: caption requests and thumbnails. The iOS app requests captions directly from the device; the web version uses a Cloudflare Worker proxy. Caption requests currently use YouTube's internal player endpoint, not an official caption API. [Confirm authorization/terms basis and attach evidence, or revise/remove this feature before submission.]
-- Wikimedia Wiktionary: online word definitions; local dictionary fallback is provided.
+- Wikimedia Wiktionary: online Korean word definitions; local dictionary fallback is provided.
+- MyMemory (Translated): English-to-Korean term translation when no local/online Korean definition exists. Only the queried term is sent; translations are labeled and may be unavailable due to service limits.
 - Kaikki.org/Wiktextract: source extraction for the bundled Wiktionary dictionary. License and provenance: dictionary/NOTICE.md and dictionary/manifest.json.
 - Unsplash: illustrative sample images, not actual videos.
 - Apple AVSpeechSynthesizer on iOS / browser speech synthesis on the web: pronunciation.
 - GitHub Pages: web/support/privacy hosting.
-No third-party authentication, payment processor, advertising/analytics SDK, or external AI service is implemented.
+No third-party authentication, payment processor, or advertising/analytics SDK is implemented. MyMemory may provide machine translations as described above.
 
 5. Regional behavior
 The app does not intentionally enable different core learning features by region. The interface primarily uses Korean with English learning content. External YouTube/Wiktionary access, available captions, and system English voices can vary by region, network and device settings. Included transcripts, local vocabulary storage and the bundled dictionary provide the core learning path without requiring successful caption imports.

@@ -37,7 +37,7 @@ const WordAheadDictionary = {
     const doc=new DOMParser().parseFromString(data.parse?.text?.['*']||'','text/html');
     let english=false,part='',phonetic='',definitions=[];
     for(const node of doc.querySelectorAll('h2,h3,h4,.IPA,ol > li')){
-      if(node.tagName==='H2'){english=node.textContent.trim()===(lang==='ko'?'영어':'English');continue;}
+      if(node.tagName==='H2'){english=node.textContent.replace(/\[.*?\]/g,'').trim()===(lang==='ko'?'영어':'English');continue;}
       if(!english)continue;
       if(/^H[34]$/.test(node.tagName)){part=node.textContent.trim();continue;}
       if(node.classList.contains('IPA')){phonetic=phonetic||node.textContent.trim();continue;}
@@ -46,35 +46,54 @@ const WordAheadDictionary = {
       const text=copy.textContent.replace(/\s+/g,' ').trim();
       if(text&&definitions.length<3)definitions.push(text);
     }
-    const result=definitions.length?{word,entry:[phonetic,part,definitions.join('; '),lang],online:true}:null;
+    const result=definitions.length&&(lang!=='ko'||/[가-힣]/.test(definitions.join(' ')))?{word,entry:[phonetic,part,definitions.join('; '),lang],online:true}:null;
     this.onlineCache.set(cacheKey,result);while(this.onlineCache.size>200)this.onlineCache.delete(this.onlineCache.keys().next().value);
     return result;
   },
-  async resolve(raw,key) {
-    const local=await this.preferred(raw,key);
-    if(navigator.onLine===false)return local;
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  async koreanTranslation(word,local){
+    const cacheKey=`translation-ko:${word}`;
+    if(this.onlineCache.has(cacheKey))return this.onlineCache.get(cacheKey);
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
     try{
-      for(const word of new Set([raw.toLowerCase().replaceAll('’',"'"),local?.word,key])){
-        if(!word)continue;
-        const result=await this.online(word,'ko',controller.signal);if(result){result.entry[0]=result.entry[0]||local?.entry[0]||'';return result;}
+      const params=new URLSearchParams({q:word,langpair:'en|ko'});
+      const response=await fetch(`https://api.mymemory.translated.net/get?${params}`,{signal:controller.signal,credentials:'omit'});
+      if(!response.ok)throw new Error('영한 뜻 연결 실패');
+      const data=await response.json();
+      const doc=new DOMParser().parseFromString(data.responseData?.translatedText||'','text/html');
+      const meaning=doc.body.textContent.trim();
+      if(Number(data.responseStatus)!==200||data.quotaFinished||!/[가-힣]/.test(meaning))return null;
+      const result={word,entry:[local?.entry[0]||'',local?.entry[1]||'',`${meaning} (자동 번역)`,'ko'],online:true,translated:true};
+      this.onlineCache.set(cacheKey,result);while(this.onlineCache.size>200)this.onlineCache.delete(this.onlineCache.keys().next().value);
+      return result;
+    }catch{return null;}finally{clearTimeout(timer);}
+  },
+  async resolve(raw,key) {
+    let local=null;try{local=await this.preferred(raw,key);}catch{}
+    if(local?.entry[3]==='ko'||navigator.onLine===false)return local;
+    const words=[...new Set([raw.toLowerCase().replaceAll('’',"'"),local?.word,key].filter(Boolean))];
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
+    try{
+      for(const word of words){
+        if(controller.signal.aborted)break;
+        try{const result=await this.online(word,'ko',controller.signal);if(result){result.entry[0]=result.entry[0]||local?.entry[0]||'';return result;}}catch{}
       }
-      if(local?.entry[3]==='ko')return local;
-      return await this.online(raw.toLowerCase(),'en',controller.signal)||local;
-    }catch{return local;}finally{clearTimeout(timer);}
+    }finally{clearTimeout(timer);}
+    const translated=await this.koreanTranslation(local?.word||words[0],local);
+    return translated||local;
   },
   async show(raw,key) {
     const selection=currentWord;
     try {
       const result=await this.resolve(raw,key);
       if(currentWord!==selection)return;
-      if(!result){if(!selection.entry?.[2])$('#sheet-meaning').textContent='내장 사전에 수록되지 않은 단어입니다.';return;}
+      if(!result){if(!selection.entry?.[2])$('#sheet-meaning').textContent='한글 뜻을 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 눌러주세요.';return;}
       const {entry,word}=result;
+      if(entry[3]!=='ko'&&/[가-힣]/.test(selection.entry?.[2]||''))return;
       selection.entry=entry;
       $('#sheet-part').textContent=entry[1];$('#sheet-phonetic').textContent=entry[0]||'';
-      $('#sheet-meaning').textContent=entry[2];
-      $('#dictionary-source').href=`https://${entry[3]==='ko'?'ko':'en'}.wiktionary.org/wiki/`+encodeURIComponent(word);
-      $('#dictionary-source').textContent=`${result.online?'온라인':'내장'} Wiktionary · ${word}`;$('#dictionary-source').hidden=false;
+      $('#sheet-meaning').textContent=entry[3]==='ko'?entry[2]:`한글 뜻을 불러오지 못했습니다.\n참고 영문: ${entry[2]}`;
+      $('#dictionary-source').href=result.translated?'https://mymemory.translated.net/':`https://${entry[3]==='ko'?'ko':'en'}.wiktionary.org/wiki/`+encodeURIComponent(word);
+      $('#dictionary-source').textContent=result.translated?`MyMemory 영한 번역 · ${word} (자동 번역)`:`${result.online?'온라인':'내장'} Wiktionary · ${word}`;$('#dictionary-source').hidden=false;
       const existing=saved.find(x=>x.word===key);
       if(existing){existing.definition=entry[2];existing.phonetic=entry[0];existing.part=entry[1];persist();}
     }catch{if(currentWord===selection&&!DICTIONARY[key])$('#sheet-meaning').textContent='내장 사전을 불러올 수 없습니다.';}
