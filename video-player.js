@@ -32,5 +32,9 @@ const WordAheadVideo = {
     const host=document.querySelector('#youtube-player-host');if(host)host.hidden=true;
   }
 };
+window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||event.data?.type!=='wordahead-player-time'||event.source!==WordAheadVideo.frame?.contentWindow)return;
+  window.dispatchEvent(new CustomEvent('wordahead:playbacktime',{detail:{time:event.data.time}}));
+});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)WordAheadVideo.pause();});
 window.addEventListener('pagehide',()=>WordAheadVideo.pause());

@@ -5,12 +5,28 @@ import AVFoundation
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
+    private var queuedShare: URL?
     func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         let window = UIWindow(frame: UIScreen.main.bounds)
-        window.rootViewController = ReaderController()
+        let controller=ReaderController()
+        let shared=UserDefaults(suiteName:"group.com.addvalue.wordahead")?.string(forKey:"pendingYouTubeURL")
+        if let shared {UserDefaults(suiteName:"group.com.addvalue.wordahead")?.removeObject(forKey:"pendingYouTubeURL");controller.receiveSharedURL(URL(string:shared))}
+        if let url=options?[.url] as? URL {controller.receiveSharedURL(url)}
+        if let queuedShare {controller.receiveSharedURL(queuedShare);self.queuedShare=nil}
+        window.rootViewController = controller
         window.makeKeyAndVisible()
         self.window = window
         return true
+    }
+    func application(_ application:UIApplication,open url:URL,options:[UIApplication.OpenURLOptionsKey:Any]=[:])->Bool {
+        guard url.scheme=="wordahead" else{return false}
+        if let controller=window?.rootViewController as? ReaderController {controller.receiveSharedURL(url)}else{queuedShare=url}
+        return true
+    }
+    func applicationWillEnterForeground(_ application:UIApplication){
+        guard let shared=UserDefaults(suiteName:"group.com.addvalue.wordahead")?.string(forKey:"pendingYouTubeURL") else{return}
+        UserDefaults(suiteName:"group.com.addvalue.wordahead")?.removeObject(forKey:"pendingYouTubeURL")
+        (window?.rootViewController as? ReaderController)?.receiveSharedURL(URL(string:shared))
     }
 }
 
@@ -34,6 +50,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         let playerConfig = WKWebViewConfiguration()
         playerConfig.allowsInlineMediaPlayback = true
         playerConfig.mediaTypesRequiringUserActionForPlayback = []
+        playerConfig.userContentController.add(self,name:"youtubeState")
         playerWeb = WKWebView(frame:.zero,configuration:playerConfig)
         playerWeb.navigationDelegate = self
         playerWeb.uiDelegate = self
@@ -138,6 +155,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){
         if webView === playerWeb {playerLoaded = true;sendPlayerCommand()}
+        if webView === web {consumeSharedURL()}
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
@@ -153,6 +171,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
         if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
+        if message.name == "youtubeState",let data=message.body as? [String:Any],let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil);return}
         if message.name == "vocabularyExport",let text=message.body as? String,let data=text.data(using:.utf8),data.count <= 5_000_000 {
             do {
                 let url=FileManager.default.temporaryDirectory.appendingPathComponent("WordAhead-known-words.json")
@@ -178,6 +197,18 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
                 }
             }
         }
+    }
+    private var pendingSharedURL:URL?
+    func receiveSharedURL(_ incoming:URL?){
+        guard let incoming else{return}
+        if incoming.scheme=="wordahead",let components=URLComponents(url:incoming,resolvingAgainstBaseURL:false),let value=components.queryItems?.first(where:{$0.name=="url"})?.value {pendingSharedURL=URL(string:value)}else{pendingSharedURL=incoming}
+        if isViewLoaded,!web.isLoading,web.url != nil {consumeSharedURL()}
+    }
+    private func consumeSharedURL(){
+        guard let url=pendingSharedURL,let data=try? JSONSerialization.data(withJSONObject:[url.absoluteString]),let array=String(data:data,encoding:.utf8) else{return}
+        pendingSharedURL=nil
+        let quoted=String(array.dropFirst().dropLast())
+        web.evaluateJavaScript("window.WordAheadShare?.handle(\(quoted))",completionHandler:nil)
     }
     func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
         guard let url=action.request.url else {decisionHandler(.cancel);return}

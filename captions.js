@@ -4,6 +4,7 @@ const WordAheadCaptions = {
     activeVideo=video;setView('reader');
     $('.recommendations').hidden=true;
     $('#reader-title').textContent=video.title;
+    const source=$('#reader-source-link');source.href=`https://youtu.be/${video.youtubeId}`;source.textContent=`youtu.be/${video.youtubeId} ↗`;source.hidden=false;
     $('#transcript-content').innerHTML='<p class="empty-state" role="status">영어 자막을 수집하고 있어요…</p>';
     try {
       const data=await this.fetch(video.youtubeId);
