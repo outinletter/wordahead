@@ -62,7 +62,7 @@ const WordAheadDictionary = {
       const doc=new DOMParser().parseFromString(data.responseData?.translatedText||'','text/html');
       const meaning=doc.body.textContent.trim();
       if(Number(data.responseStatus)!==200||data.quotaFinished||!/[가-힣]/.test(meaning))return null;
-      const result={word,entry:[local?.entry[0]||'',local?.entry[1]||'',`${meaning} (자동 번역)`,'ko'],online:true,translated:true};
+      const result={word,entry:[local?.entry[0]||'',local?.entry[1]||'',meaning,'ko'],online:true,translated:true};
       this.onlineCache.set(cacheKey,result);while(this.onlineCache.size>200)this.onlineCache.delete(this.onlineCache.keys().next().value);
       return result;
     }catch{return null;}finally{clearTimeout(timer);}
@@ -93,7 +93,7 @@ const WordAheadDictionary = {
       $('#sheet-part').textContent=entry[1];$('#sheet-phonetic').textContent=entry[0]||'';
       $('#sheet-meaning').textContent=entry[3]==='ko'?entry[2]:`한글 뜻을 불러오지 못했습니다.\n참고 영문: ${entry[2]}`;
       $('#dictionary-source').href=result.translated?'https://mymemory.translated.net/':`https://${entry[3]==='ko'?'ko':'en'}.wiktionary.org/wiki/`+encodeURIComponent(word);
-      $('#dictionary-source').textContent=result.translated?`MyMemory 영한 번역 · ${word} (자동 번역)`:`${result.online?'온라인':'내장'} Wiktionary · ${word}`;$('#dictionary-source').hidden=false;
+      $('#dictionary-source').textContent=result.translated?`MyMemory 영한 번역 · ${word}`:`${result.online?'온라인':'내장'} Wiktionary · ${word}`;$('#dictionary-source').hidden=false;
       const existing=saved.find(x=>x.word===key);
       if(existing){existing.definition=entry[2];existing.phonetic=entry[0];existing.part=entry[1];persist();}
     }catch{if(currentWord===selection&&!DICTIONARY[key])$('#sheet-meaning').textContent='내장 사전을 불러올 수 없습니다.';}
