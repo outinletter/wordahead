@@ -66,3 +66,5 @@ button:disabled{cursor:default;opacity:.55}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 .modal .theme-toggle input[type=checkbox]{appearance:auto;flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:0;padding:0;accent-color:var(--teal)}
 .modal .theme-toggle{justify-content:flex-start;white-space:nowrap;background:transparent}
+
+.settings-actions{display:flex;justify-content:flex-end;margin-top:16px}

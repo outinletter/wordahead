@@ -2,8 +2,8 @@ const WordAheadDictionary = {
   shards:new Map(), pending:new Map(),
   install(id,entries) {this.shards.delete(id);this.shards.set(id,entries);while(this.shards.size>8)this.shards.delete(this.shards.keys().next().value);},
   nativeRequests:new Map(),
-  receive(payload){const pending=this.nativeRequests.get(payload.id);if(!pending)return;this.nativeRequests.delete(payload.id);payload.error?pending.reject(new Error(payload.error)):pending.resolve(payload.result);},
-  native(action,extra={}){return new Promise((resolve,reject)=>{const id=crypto.randomUUID();this.nativeRequests.set(id,{resolve,reject});window.webkit.messageHandlers.dictionaryStore.postMessage({id,action,...extra});});},
+  receive(payload){const pending=this.nativeRequests.get(payload.id);if(!pending)return;this.nativeRequests.delete(payload.id);clearTimeout(pending.timer);payload.error?pending.reject(new Error(payload.error)):pending.resolve(payload.result);},
+  native(action,extra={}){return new Promise((resolve,reject)=>{const id=crypto.randomUUID(),timer=setTimeout(()=>{this.nativeRequests.delete(id);reject(new Error('사전 응답이 지연됩니다. 다시 시도해주세요.'));},action==='download'?45*60*1000:10000);this.nativeRequests.set(id,{resolve,reject,timer});try{window.webkit.messageHandlers.dictionaryStore.postMessage({id,action,...extra});}catch(error){clearTimeout(timer);this.nativeRequests.delete(id);reject(error);}});},
   async lookup(word) {
     if(window.webkit?.messageHandlers?.dictionaryStore){const result=await this.native('lookup',{word:word.toLowerCase()});return result.entry;}
 

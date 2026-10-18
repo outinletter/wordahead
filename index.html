@@ -7,15 +7,15 @@
   <meta name="theme-color" content="#f5f6f8">
   <meta name="description" content="영상 자막으로 배우는 나만의 영어 단어장">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.png?v=20261019-18" type="image/png">
-  <link rel="apple-touch-icon" href="icon.png?v=20261019-18">
-  <link rel="stylesheet" href="styles.css?v=20261019-18">
+  <link rel="icon" href="icon.png?v=20261019-19" type="image/png">
+  <link rel="apple-touch-icon" href="icon.png?v=20261019-19">
+  <link rel="stylesheet" href="styles.css?v=20261019-19">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#home" data-view="home" aria-label="WordAhead 홈"><img class="brand-mark" src="icon.png?v=20261019-18" alt=""><span>WordAhead</span></a>
+      <a class="brand" href="#home" data-view="home" aria-label="WordAhead 홈"><img class="brand-mark" src="icon.png?v=20261019-19" alt=""><span>WordAhead</span></a>
       <nav class="top-nav" aria-label="주 메뉴">
         <button class="nav-link active" data-view="home">내 학습</button>
         <button class="nav-link" data-view="library">내 단어장 <span id="nav-count" class="nav-count">0</span></button>
@@ -48,7 +48,7 @@
     </main>
 
     <main id="library-view" class="view" hidden>
-      <button type="button" id="library-back" class="view-back" aria-label="내 학습으로 돌아가기">← 내 학습</button>
+      <button type="button" id="library-back" class="view-back" aria-label="내 학습으로 돌아가기">←</button>
       <div class="vocabulary-backup"><button id="export-known" class="outline-button">체크 어휘 백업 저장</button><label class="outline-button">체크 어휘 불러오기<input id="import-known" type="file" accept=".json,application/json" hidden></label><p>초기화 전 파일 앱에 백업하세요. 다시 불러오면 추천에서 제외됩니다. 직접 단어장에 저장하는 것은 가능합니다.</p></div>
       <section class="welcome-row compact"><div><p class="eyebrow">YOUR VOCABULARY</p><h1>내 단어장</h1><p class="subhead">영상에서 발견한 단어를 모아 복습해요.</p></div></section>
       <section class="stats-row"><button type="button" class="stat-card" data-library-filter="all"><span>저장한 단어</span><strong id="stat-total">0</strong><small>나만의 어휘</small></button><button type="button" class="stat-card" data-library-filter="learning"><span>익히는 중</span><strong id="stat-learning">0</strong><small>복습이 필요해요</small></button><button type="button" class="stat-card" data-library-filter="known"><span>알고 있어요</span><strong id="stat-known">0</strong><small>잘하고 있어요</small></button></section>
@@ -68,15 +68,15 @@
     <dialog id="delete-video-dialog" class="modal" aria-labelledby="delete-video-title"><form method="dialog"><h2 id="delete-video-title">영상을 삭제할까요?</h2><p>목록의 영상과 자막을 삭제합니다. 저장한 단어는 유지됩니다.</p><div class="delete-video-actions"><button id="confirm-video-delete" type="button" class="primary-button">삭제</button></div></form></dialog><dialog id="reset-dialog" class="modal"><form method="dialog"><h2>이 기기의 학습 데이터 삭제</h2><p>추가한 자막, 저장한 단어, 알고 있는 어휘, 학습 기록과 읽기 위치를 삭제합니다. 예시 자막은 다시 표시됩니다. 체크 어휘 백업에는 저장한 단어와 자막이 포함되지 않습니다.</p><button value="cancel" class="outline-button">취소</button><button id="confirm-reset" type="button" class="primary-button">전체 학습 데이터 삭제</button></form></dialog>
     <footer class="footer"><span>WordAhead</span><span>자막으로 배우는 나만의 영어</span><span><a href="support.html">도움말</a>　·　<a href="privacy.html">개인정보</a>　·　<button id="reset-data" class="text-button">학습 데이터 삭제</button></span></footer>
   </div>
-  <dialog id="settings-dialog" class="modal" aria-labelledby="settings-title"><form method="dialog"><button class="modal-close" aria-label="환경설정 닫기">×</button><h2 id="settings-title">환경설정</h2><label for="font-size">자막 글자 크기</label><div class="reading-tools" aria-label="자막 글자 크기"><button type="button" id="font-down" aria-label="글자 작게">A−</button><output id="font-size" aria-live="polite">20</output><button type="button" id="font-up" aria-label="글자 크게">A＋</button><button type="button" id="font-reset" aria-label="글자 크기 기본값으로">기본</button></div><h3>오프라인 사전</h3><p id="dictionary-status" class="settings-note">사전 확인 중</p><button type="button" id="download-dictionary" class="outline-button">확장 사전 다운로드 · Wi-Fi</button><p class="settings-note">기본 영한 약 1만 5천 어휘는 바로 사용 가능합니다. 확장 사전은 한 번 저장하면 앱 업데이트 후에도 유지되며, 변경된 파일만 다시 받습니다. 앱을 삭제하면 사전도 삭제됩니다.</p><label class="theme-toggle"><input type="checkbox" id="dark-mode"> 다크 테마</label><p class="settings-note">글자 크기는 1px 단위로 조절됩니다.</p><button class="primary-button">완료</button></form></dialog>
+  <dialog id="settings-dialog" class="modal" aria-labelledby="settings-title"><form method="dialog"><h2 id="settings-title">환경설정</h2><label for="font-size">자막 글자 크기</label><div class="reading-tools" aria-label="자막 글자 크기"><button type="button" id="font-down" aria-label="글자 작게">A−</button><output id="font-size" aria-live="polite">20</output><button type="button" id="font-up" aria-label="글자 크게">A＋</button><button type="button" id="font-reset" aria-label="글자 크기 기본값으로">기본</button></div><h3>오프라인 사전</h3><p id="dictionary-status" class="settings-note">사전 확인 중</p><button type="button" id="download-dictionary" class="outline-button">확장 사전 다운로드 · Wi-Fi</button><p class="settings-note">기본 영한 약 1만 5천 어휘는 바로 사용 가능합니다. 확장 사전은 한 번 저장하면 앱 업데이트 후에도 유지되며, 변경된 파일만 다시 받습니다. 앱을 삭제하면 사전도 삭제됩니다.</p><label class="theme-toggle"><input type="checkbox" id="dark-mode"> 다크 테마</label><p class="settings-note">글자 크기는 1px 단위로 조절됩니다.</p><div class="settings-actions"><button class="primary-button">완료</button></div></form></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <dialog id="caption-dialog" class="modal"><form method="dialog" id="caption-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">START LEARNING</p><h2>자막으로 먼저 시작해요</h2><p class="modal-description">YouTube에서 자막을 제공하지 않거나 접근이 제한된 경우 직접 작성했거나 사용할 권한이 있는 영어 자막으로 학습할 수 있습니다.</p><label for="caption-title">영상 제목</label><input id="caption-title" placeholder="예: Why we love the ocean" value="내가 고른 영어 영상"><label for="caption-text">영어 자막</label><textarea id="caption-text" rows="7" placeholder="영어 자막을 붙여 넣으세요…"></textarea><div class="modal-sample-row"><button type="button" id="load-sample" class="text-button">예시 자막 불러오기</button><span>자막 데이터는 이 기기에 저장됩니다.</span></div><button type="submit" class="primary-button modal-submit">자막 읽기 시작 <span>→</span></button></form></dialog>
   <dialog id="playlist-dialog" class="modal"><form method="dialog" id="playlist-form"><button class="modal-close" value="cancel" aria-label="닫기">×</button><p class="eyebrow">PLAYLIST</p><h2>재생목록 불러오기</h2><p class="modal-description">재생목록 링크를 입력하면 목록과 자막 이용 가능 상태를 확인할 수 있어요. 현재 시제품은 실제 YouTube 데이터 연결 전이라 예시 목록을 보여줍니다.</p><input id="playlist-url" type="url" placeholder="YouTube 재생목록 URL"><button id="show-playlist-sample" type="button" class="primary-button modal-submit">목록 미리보기 <span>→</span></button><div id="playlist-results" class="playlist-results"></div></form></dialog>
   <main id="preview-dialog" class="view preview-page" hidden><header class="preview-header"><h1>먼저 살펴볼 단어</h1><button id="close-preview" aria-label="미리보기 닫고 이전 화면으로 돌아가기">닫기 ×</button></header><p id="preview-video-title"></p><div id="preview-words" class="preview-words" role="list" aria-label="단어와 뜻"></div></main>
-  <script src="dictionary/basic-vocabulary.js?v=20261019-18"></script>
-  <script src="dictionary.js?v=20261019-18"></script>
-  <script src="captions.js?v=20261019-18"></script>
-  <script src="video-player.js?v=20261019-18"></script>
-  <script src="app.js?v=20261019-18"></script>
+  <script src="dictionary/basic-vocabulary.js?v=20261019-19"></script>
+  <script src="dictionary.js?v=20261019-19"></script>
+  <script src="captions.js?v=20261019-19"></script>
+  <script src="video-player.js?v=20261019-19"></script>
+  <script src="app.js?v=20261019-19"></script>
 </body>
 </html>

@@ -194,10 +194,10 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
                     let result = try await dictionaryStore.handle(request)
                     let payload: [String:Any] = ["id":id,"result":result]
                     let data = try JSONSerialization.data(withJSONObject:payload)
-                    if let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("window.WordAheadDictionary.receive(\(json))",completionHandler:nil)}
+                    if let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("WordAheadDictionary.receive(\(json))",completionHandler:nil)}
                 } catch {
                     let data = try? JSONSerialization.data(withJSONObject:["id":id,"error":"사전 다운로드에 실패했습니다. Wi-Fi 연결을 확인하고 다시 시도해주세요."])
-                    if let data, let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("window.WordAheadDictionary.receive(\(json))",completionHandler:nil)}
+                    if let data, let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("WordAheadDictionary.receive(\(json))",completionHandler:nil)}
                 }
             }
             return

@@ -75,7 +75,21 @@ async function showPreview(video){
   $('#preview-video-title').textContent=video.title;
   $('#preview-words').innerHTML=words.length?words.map(w=>`<div class="preview-word" role="listitem"><label class="known-toggle"><input type="checkbox" data-preview-known="${escapeHtml(w.word)}" aria-label="${escapeHtml(w.raw)} 알고 있는 단어로 표시"></label><div class="preview-word-content"><div class="preview-word-heading"><strong>${escapeHtml(w.raw)}</strong><button type="button" data-pronounce="${escapeHtml(w.raw)}" aria-label="${escapeHtml(w.raw)} 발음 듣기">🔊</button></div><small data-definition="${escapeHtml(w.word)}">${escapeHtml(plainDictionaryMeaning(w.entry?.[2]||'뜻을 확인하는 중…'))}</small></div></div>`).join(''):'<div class="empty-state">추천할 낯선 단어가 없어요.</div>';
   setView('preview');
-  for(const w of words){if(dialog.hidden||dialog.dataset.videoId!==video.id)return;try{const result=await WordAheadDictionary.resolve(w.raw,w.word);const target=dialog.querySelector(`[data-definition="${w.word}"]`);if(target&&dialog.dataset.videoId===video.id)target.textContent=plainDictionaryMeaning(result?.entry?.[3]==='ko'?result.entry[2]:w.entry?.[2]||result?.entry?.[2]||'뜻이 수록되지 않았습니다.');}catch{const target=dialog.querySelector(`[data-definition="${w.word}"]`);if(target)target.textContent='뜻을 불러올 수 없습니다.';}}
+  const request=crypto.randomUUID();dialog.dataset.request=request;
+  const active=()=>!dialog.hidden&&dialog.dataset.request===request;
+  const update=(w,entry)=>{
+    if(!active())return;
+    const meaning=entry?.[2]&&/[가-힣]/.test(entry[2])?plainDictionaryMeaning(entry[2]):null;
+    const target=dialog.querySelector(`[data-definition="${w.word}"]`);
+    if(target)target.textContent=meaning||'한글 뜻을 찾지 못했습니다. 인터넷 연결 후 다시 열어주세요.';
+    const record=saved.find(x=>x.word===w.word);
+    if(meaning&&record){record.definition=meaning;record.phonetic=entry[0]||'';record.part=entry[1]||'';persist();}
+  };
+  async function pool(items,run){let cursor=0;await Promise.all(Array.from({length:Math.min(4,items.length)},async()=>{while(active()&&cursor<items.length){const w=items[cursor++];await run(w);}}));}
+  const missing=[];
+  await pool(words,async w=>{try{const result=await WordAheadDictionary.preferred(w.raw,w.word);const entry=result?.entry||w.entry;if(entry?.[2]&&/[가-힣]/.test(entry[2]))update(w,entry);else missing.push(w);}catch{missing.push(w);}});
+  await pool(missing,async w=>{try{const result=await WordAheadDictionary.resolve(w.raw,w.word);update(w,result?.entry||w.entry);}catch{update(w,w.entry);}});
+
 }
 document.addEventListener('change',e=>{const libraryWord=e.target.dataset.libraryKnown;if(libraryWord){const entry=saved.find(x=>x.word===libraryWord);if(entry){entry.status=e.target.checked?'known':'learning';setKnownWord(libraryWord,e.target.checked);persist();renderLibrary();}return}const word=e.target.dataset.previewKnown;if(!word)return;let entry=saved.find(x=>x.word===word);if(!entry){const row=e.target.closest('.preview-word');entry={word,display:row?.querySelector('strong')?.textContent||word,definition:row?.querySelector('[data-definition]')?.textContent||'',source:activeVideo?.title||'맞춤 추천',added:Date.now()};saved.unshift(entry);}entry.status=e.target.checked?'known':'learning';setKnownWord(word,e.target.checked);persist();renderBadges();if(activeVideo?.text)renderRecommendations(activeVideo);});
 $('#recommend-preview').onclick=()=>showPreview(activeVideo);
