@@ -8,7 +8,8 @@ const WordAheadCaptions = {
     try {
       const data=await this.fetch(video.youtubeId);
       if(activeVideo!==video||$('#reader-view').hidden)return;
-      video.text=data.segments.map(x=>x.text).join('\n');video.segments=data.segments;
+      const cleanSegment=x=>({...x,text:String(x.text||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()});
+      video.segments=data.segments.map(cleanSegment).filter(x=>x.text);video.text=video.segments.map(x=>x.text).join('\n');
       video.title=data.title;video.channel=data.channel;video.caption=true;
       video.meta=data.isGenerated?'영어(자동) 자막':'영어 자막';
       persist();renderCards();openReader(video);
