@@ -107,6 +107,8 @@ window.WordAheadPlayback={lastIndex:-1,update(seconds){if(!Number.isFinite(secon
 window.addEventListener('wordahead:playbacktime',event=>window.WordAheadPlayback.update(event.detail?.time));
 window.WordAheadShare={handle(value){let link=value;try{const parsed=new URL(value);if(parsed.protocol==='wordahead:')link=parsed.searchParams.get('url')||'';}catch{return}if(link)onVideoUrl(link,true)}};
 if('serviceWorker'in navigator&&location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+function updatePlaybackRateButtons(){const rate=WordAheadVideo.playbackRate;$$('[data-playback-rate]').forEach(button=>{const active=Number(button.dataset.playbackRate)===rate;button.classList.toggle('active',active);button.setAttribute('aria-pressed',active?'true':'false')})}
+$$('[data-playback-rate]').forEach(button=>button.onclick=()=>{WordAheadVideo.setRate(button.dataset.playbackRate);updatePlaybackRateButtons()});updatePlaybackRateButtons();
 renderCards();renderBadges();
 
 $('#reset-data').onclick=()=>$('#reset-dialog').showModal();

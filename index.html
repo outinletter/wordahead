@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261010-arrow" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261010-arrow">
-  <link rel="stylesheet" href="styles.css?v=20261017-2">
+  <link rel="stylesheet" href="styles.css?v=20261018-3">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -58,6 +58,7 @@
     <main id="reader-view" class="reader-view" hidden>
       <div class="reader-top"><button id="back-home" class="back-button" aria-label="이전 화면으로 돌아가기">←</button><button class="recommendations" id="recommend-preview" disabled><span class="recommend-icon" aria-hidden="true">📖</span><span id="recommend-label">먼저 살펴볼 단어</span><span id="recommend-count" class="recommend-count">0</span></button><button id="reader-home" class="reader-home" aria-label="내 학습으로 이동"><img src="icon.png?v=20261010-arrow" alt="WordAhead"></button><span id="reader-title" class="sr-only">영상 자막</span></div>
       <section id="youtube-player-host" class="youtube-player-host" aria-label="YouTube 영상 플레이어" hidden></section>
+      <div class="playback-speed" role="group" aria-label="재생 속도"><span>재생 속도</span><button type="button" data-playback-rate="0.75">0.75x</button><button type="button" data-playback-rate="1">1x</button><button type="button" data-playback-rate="1.25">1.25x</button></div>
       <div class="reader-progress"><span id="read-progress"></span></div>
       <div class="reader-layout"><aside class="video-side"><div class="video-preview" id="reader-thumbnail"><span class="play-triangle"></span><span class="duration">12:48</span></div><p class="eyebrow">READING TRANSCRIPT</p><h2 id="side-title">영상 제목</h2><p id="side-meta" class="side-meta">영어 자막 · 전체 스크립트</p><div class="side-divider"></div><div class="side-stat"><span>자막 문장</span><strong id="sentence-count">0</strong></div><div class="side-stat"><span>새로운 단어</span><strong id="new-word-count">0</strong></div><button id="make-list-button" class="primary-button full-button">맞춤 단어장 미리보기 <span>→</span></button><p class="side-note">단어를 클릭해 뜻과 발음을 확인해보세요.</p></aside>
         <section class="transcript-panel"><button type="button" id="copy-transcript" class="outline-button copy-transcript">자막 모두 복사</button><div id="transcript-content" class="transcript-content"></div></section>
@@ -77,6 +78,6 @@
   <script src="dictionary.js?v=20261015-5"></script>
   <script src="captions.js?v=20261018-1"></script>
   <script src="video-player.js?v=20261018-2"></script>
-  <script src="app.js?v=20261018-2"></script>
+  <script src="app.js?v=20261018-3"></script>
 </body>
 </html>
