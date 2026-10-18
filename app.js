@@ -128,6 +128,7 @@ function requestVideoDeletion(video){
  $('#delete-video-dialog').showModal();
 }
 $('#delete-video-dialog').addEventListener('close',()=>{deletingVideoId=null;});
+$('#delete-video-dialog').addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.currentTarget.close();});
 $('#confirm-video-delete').onclick=()=>{
  const id=deletingVideoId;if(!id)return;
  const remaining=videos.filter(v=>v.id!==id);
