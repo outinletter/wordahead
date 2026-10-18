@@ -92,7 +92,7 @@ const WordAheadDictionary = {
       const result=await this.resolve(raw,key);
       if(currentWord!==selection)return;
       if(!result){if(!selection.entry?.[2])$('#sheet-meaning').textContent='한글 뜻을 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 눌러주세요.';return;}
-      const {entry,word}=result;
+      const word=result.word,entry=[...result.entry];entry[2]=plainDictionaryMeaning(entry[2]);
       if(entry[3]!=='ko'&&/[가-힣]/.test(selection.entry?.[2]||''))return;
       selection.entry=entry;
       $('#sheet-part').textContent=entry[1];$('#sheet-phonetic').textContent=entry[0]||'';

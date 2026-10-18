@@ -130,9 +130,12 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         if playerLoaded {playerWeb.evaluateJavaScript("WordAheadYouTube.load({action:'pause'})",completionHandler:nil)}
     }
     @objc private func restoreYouTubeRate(){
+        applyStoredYouTubeRate()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.8){ [weak self] in self?.applyStoredYouTubeRate() }
+    }
+    private func applyStoredYouTubeRate(){
         guard playerLoaded,let rate=playerCommand?["rate"] as? Double,rate.isFinite,rate > 0 else {return}
         playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil)
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.8){ [weak self] in self?.restoreYouTubeRate() }
     }
     private func sendPlayerCommand(){
         guard playerLoaded,let command = playerCommand,
@@ -143,7 +146,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     private func handleYouTube(_ data:[String:Any]){
         guard let action = data["action"] as? String else {return}
         if action == "pause" {pauseYouTube();return}
-        if action == "rate" { if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 { playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil) }; return }
+        if action == "rate" { if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 { playerCommand?["rate"] = rate; playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil) }; return }
         if action == "hide" {pauseYouTube();showYouTube(false);return}
         guard ["show","seek","load"].contains(action),let id = data["videoId"] as? String,
               id.range(of:"^[A-Za-z0-9_-]{11}$",options:.regularExpression) != nil else {return}
@@ -201,7 +204,10 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         }
         if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
         if message.name == "youtubeState",let data=message.body as? [String:Any] {
-            if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {playerCommand?["rate"] = rate}
+            if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {
+                playerCommand?["rate"] = rate
+                web.evaluateJavaScript("if(typeof WordAheadVideo!=='undefined'){WordAheadVideo.playbackRate=\(rate);localStorage.setItem('wa-youtube-playback-rate',String(\(rate)));}",completionHandler:nil)
+            }
             if let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil)}
             return
         }
