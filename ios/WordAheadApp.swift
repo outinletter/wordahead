@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import AVFoundation
+import CryptoKit
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -39,11 +40,13 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     private var playerVideoID: String?
     private var playerCommand: [String:Any]?
     private let speaker = AVSpeechSynthesizer()
+    private let dictionaryStore = OfflineDictionaryStore()
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red:0.96,green:0.96,blue:0.97,alpha:1)
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name:"captions")
+        config.userContentController.add(self, name:"dictionaryStore")
         config.userContentController.add(self, name:"speak")
         config.userContentController.add(self, name:"vocabularyExport")
         config.userContentController.add(self, name:"youtubePlayer")
@@ -181,6 +184,21 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
+        if message.name == "dictionaryStore", message.webView === web, message.frameInfo.isMainFrame,
+           let request = message.body as? [String:String], let id = request["id"] {
+            Task {
+                do {
+                    let result = try await dictionaryStore.handle(request)
+                    let payload: [String:Any] = ["id":id,"result":result]
+                    let data = try JSONSerialization.data(withJSONObject:payload)
+                    if let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("window.WordAheadDictionary.receive(\(json))",completionHandler:nil)}
+                } catch {
+                    let data = try? JSONSerialization.data(withJSONObject:["id":id,"error":"사전 다운로드에 실패했습니다. Wi-Fi 연결을 확인하고 다시 시도해주세요."])
+                    if let data, let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("window.WordAheadDictionary.receive(\(json))",completionHandler:nil)}
+                }
+            }
+            return
+        }
         if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
         if message.name == "youtubeState",let data=message.body as? [String:Any] {
             if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {playerCommand?["rate"] = rate}
@@ -297,5 +315,74 @@ enum CaptionFetcher {
         guard !segments.isEmpty else {throw CaptionFailure.unavailable("영어 자막 본문이 비어 있습니다.")}
         let details=player["videoDetails"] as? [String:Any] ?? [:]
         return ["videoId":video,"title":details["title"] as? String ?? "YouTube 영어 자막","channel":details["author"] as? String ?? "YouTube","language":track["languageCode"] as? String ?? "en","isGenerated":track["kind"] as? String == "asr","segments":segments]
+    }
+}
+
+// Dictionary data survives app upgrades and is excluded from iCloud backup.
+actor OfflineDictionaryStore {
+    private var downloading = false
+    private var coreEntries: [String:Any]?
+    private var shardEntries: [String:[String:Any]] = [:]
+    private var cachedManifest: Manifest?
+    private struct Manifest: Decodable {
+        struct Shard: Decodable {let sha256: String; let bytes: Int}
+        let version: String; let source: String; let shards: [String:Shard]
+    }
+    private func manifest() throws -> Manifest {
+        if let cachedManifest {return cachedManifest}
+        let url = Bundle.main.url(forResource:"offline-manifest",withExtension:"json",subdirectory:"Web/dictionary")!
+        let result = try JSONDecoder().decode(Manifest.self,from:Data(contentsOf:url)); cachedManifest = result; return result
+    }
+    private func directory() throws -> URL {
+        var url = try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent("OfflineDictionary",isDirectory:true)
+        try FileManager.default.createDirectory(at:url,withIntermediateDirectories:true)
+        var values = URLResourceValues(); values.isExcludedFromBackup = true; try url.setResourceValues(values)
+        return url
+    }
+    func handle(_ request: [String:String]) async throws -> [String:Any] {
+        let manifest = try manifest(), root = try directory()
+        if request["action"] == "lookup" {
+            let key = request["word"] ?? ""
+            let hash = Array(SHA256.hash(data:Data(key.utf8)))[0]
+            let shard = String(format:"%02x",hash)
+            if let info = manifest.shards[shard] {
+                let url = root.appendingPathComponent(info.sha256+".json")
+                if let entries = shardEntries[shard], let entry = entries[key] {return ["entry":entry]}
+                if shardEntries[shard] == nil, let data = try? Data(contentsOf:url), let entries = try JSONSerialization.jsonObject(with:data) as? [String:Any] {
+                    if shardEntries.count >= 8 {shardEntries.removeAll()}
+                    shardEntries[shard] = entries
+                    if let entry = entries[key] {return ["entry":entry]}
+                }
+            }
+            if coreEntries == nil {
+                let coreURL = Bundle.main.url(forResource:"core-ko",withExtension:"json",subdirectory:"Web/dictionary")!
+                coreEntries = try JSONSerialization.jsonObject(with:Data(contentsOf:coreURL)) as? [String:Any]
+            }
+            return ["entry":coreEntries?[key] ?? NSNull()]
+        }
+        if request["action"] == "download" {
+            guard !downloading else {return ["busy":true]}
+            downloading = true; defer {downloading = false}
+            let config = URLSessionConfiguration.ephemeral
+            config.allowsCellularAccess = false; config.allowsExpensiveNetworkAccess = false; config.allowsConstrainedNetworkAccess = false
+            config.timeoutIntervalForRequest = 30
+            let session = URLSession(configuration:config); defer {session.invalidateAndCancel()}
+            for (shard,info) in manifest.shards.sorted(by:{$0.key < $1.key}) {
+                let destination = root.appendingPathComponent(info.sha256+".json")
+                if FileManager.default.fileExists(atPath:destination.path) {continue}
+                guard let url = URL(string:manifest.source+shard+".js") else {throw URLError(.badURL)}
+                let (data,response) = try await session.data(from:url)
+                guard (response as? HTTPURLResponse)?.statusCode == 200, data.count == info.bytes,
+                      SHA256.hash(data:data).map({String(format:"%02x",$0)}).joined() == info.sha256,
+                      let text = String(data:data,encoding:.utf8), let start = text.firstIndex(of:"{"), let end = text.lastIndex(of:"}") else {throw URLError(.cannotParseResponse)}
+                let json = Data(text[start...end].utf8)
+                _ = try JSONSerialization.jsonObject(with:json)
+                try json.write(to:destination,options:.atomic)
+            }
+            let keep = Set(manifest.shards.values.map{$0.sha256+".json"})
+            for file in try FileManager.default.contentsOfDirectory(at:root,includingPropertiesForKeys:nil) where !keep.contains(file.lastPathComponent) {try? FileManager.default.removeItem(at:file)}
+        }
+        let count = manifest.shards.values.filter{FileManager.default.fileExists(atPath:root.appendingPathComponent($0.sha256+".json").path)}.count
+        return ["complete":count == manifest.shards.count,"downloaded":count,"total":manifest.shards.count,"bytes":manifest.shards.values.reduce(0){$0+$1.bytes}]
     }
 }

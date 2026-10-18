@@ -1,7 +1,12 @@
 const WordAheadDictionary = {
   shards:new Map(), pending:new Map(),
   install(id,entries) {this.shards.delete(id);this.shards.set(id,entries);while(this.shards.size>8)this.shards.delete(this.shards.keys().next().value);},
+  nativeRequests:new Map(),
+  receive(payload){const pending=this.nativeRequests.get(payload.id);if(!pending)return;this.nativeRequests.delete(payload.id);payload.error?pending.reject(new Error(payload.error)):pending.resolve(payload.result);},
+  native(action,extra={}){return new Promise((resolve,reject)=>{const id=crypto.randomUUID();this.nativeRequests.set(id,{resolve,reject});window.webkit.messageHandlers.dictionaryStore.postMessage({id,action,...extra});});},
   async lookup(word) {
+    if(window.webkit?.messageHandlers?.dictionaryStore){const result=await this.native('lookup',{word:word.toLowerCase()});return result.entry;}
+
     const key = word.toLowerCase();
     const hash = new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key)));
     const id = hash[0].toString(16).padStart(2,'0');
@@ -99,3 +104,16 @@ const WordAheadDictionary = {
     }catch{if(currentWord===selection&&!DICTIONARY[key])$('#sheet-meaning').textContent='내장 사전을 불러올 수 없습니다.';}
   }
 };
+
+async function refreshOfflineDictionary(){
+ const button=document.querySelector('#download-dictionary'),status=document.querySelector('#dictionary-status');
+ if(!button)return;
+ if(!window.webkit?.messageHandlers?.dictionaryStore){button.hidden=true;status.textContent='확장 사전 다운로드는 iPhone 앱에서 지원합니다.';return;}
+ try{const state=await WordAheadDictionary.native('status');button.disabled=state.complete;button.textContent=state.complete?'확장 사전 최신 상태':'확장 사전 다운로드 · Wi-Fi';status.textContent=state.complete?'확장 사전 저장 완료 · 앱 업데이트 후에도 유지됩니다.':`기본 영한 사전 사용 중 · 확장 사전 ${state.downloaded}/${state.total}개 저장됨 (전체 약 ${Math.ceil(state.bytes/1000000)}MB)`;}catch{status.textContent='사전 상태를 확인하지 못했습니다.';}
+}
+document.querySelector('#download-dictionary')?.addEventListener('click',async()=>{
+ const button=document.querySelector('#download-dictionary'),status=document.querySelector('#dictionary-status');
+ button.disabled=true;status.textContent='Wi-Fi로 다운로드 중입니다. 앱을 열어두세요. 중단되면 다음에 이어받습니다.';
+ try{await WordAheadDictionary.native('download');await refreshOfflineDictionary();}catch(error){button.disabled=false;status.textContent=error.message;}
+});
+refreshOfflineDictionary();
