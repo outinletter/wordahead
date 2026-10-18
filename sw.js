@@ -1,4 +1,4 @@
-const CACHE='wordahead-shell-v30';
+const CACHE='wordahead-shell-v31';
 const CORE=['./','./index.html','./styles.css?v=20261018-4','./app.js?v=20261018-3','./video-player.js?v=20261018-2','./youtube-player.html','./dictionary/basic-vocabulary.js?v=20261015-5','./captions.js?v=20261018-1','./dictionary.js?v=20261017-1','./privacy.html','./support.html','./dictionary/NOTICE.md','./manifest.webmanifest','./icon.png?v=20261010-arrow'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('wordahead-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));

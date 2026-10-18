@@ -34,3 +34,4 @@ body.reading .back-button,.view-back{display:inline-grid;place-items:center;widt
 .caption-paragraph[data-cue-start]{scroll-margin-top:120px}
 .playback-speed{display:flex;align-items:center;justify-content:flex-end;gap:6px;max-width:800px;margin:-4px auto 10px;color:var(--muted);font-size:11px}.playback-speed button{border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);padding:5px 9px;font:600 11px inherit;cursor:pointer}.playback-speed button.active{border-color:var(--teal);background:var(--mint);color:var(--teal-dark)}
 .reader-top #recommend-preview{align-items:center;justify-content:flex-start}.reader-top #recommend-label{text-align:left}
+.word-sheet{height:30dvh;min-height:190px;max-height:30dvh;overflow-y:auto;overscroll-behavior:contain}
