@@ -129,6 +129,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     @objc private func restoreYouTubeRate(){
         guard playerLoaded,let rate=playerCommand?["rate"] as? Double,rate.isFinite,rate > 0 else {return}
         playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil)
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.8){ [weak self] in self?.restoreYouTubeRate() }
     }
     private func sendPlayerCommand(){
         guard playerLoaded,let command = playerCommand,
