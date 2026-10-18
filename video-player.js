@@ -1,12 +1,13 @@
 const WordAheadVideo = {
-  videoId:null,frame:null,pending:null,
+  videoId:null,frame:null,pending:null,playbackRate:Number(localStorage.getItem('wa-youtube-playback-rate'))||1,
   valid(id){return /^[A-Za-z0-9_-]{11}$/.test(id||'');},
+  rate(value){const allowed=[.25,.5,.75,1,1.25,1.5,1.75,2];const n=Number(value);return allowed.includes(n)?n:1;},
   native(){return window.webkit?.messageHandlers?.youtubePlayer;},
   show(video){
     if(!this.valid(video?.youtubeId)){this.hide();return;}
     const changed=this.videoId!==video.youtubeId;
     this.videoId=video.youtubeId;
-    if(this.native()){this.native().postMessage({action:'show',videoId:this.videoId});return;}
+    if(this.native()){this.native().postMessage({action:'show',videoId:this.videoId,rate:this.playbackRate});return;}
     const host=document.querySelector('#youtube-player-host');host.hidden=false;
     if(!this.frame){
       this.frame=document.createElement('iframe');this.frame.title='YouTube 영상 플레이어';
@@ -14,7 +15,7 @@ const WordAheadVideo = {
       this.frame.onload=()=>{if(this.pending)this.send(this.pending);};
       this.frame.src='youtube-player.html';host.append(this.frame);
     }
-    if(changed||this.pending?.action==='pause')this.send({action:'load',videoId:this.videoId,start:0,play:false});
+    if(changed||this.pending?.action==='pause')this.send({action:'load',videoId:this.videoId,start:0,play:false,rate:this.playbackRate});
   },
   send(command){
     this.pending=command;
@@ -23,10 +24,12 @@ const WordAheadVideo = {
   },
   seek(video,start){
     if(!this.valid(video?.youtubeId)||typeof start!=='number'||!Number.isFinite(start)||start<0)return;
-    this.show(video);this.send({action:'seek',videoId:video.youtubeId,start,play:true});
+    this.show(video);this.send({action:'seek',videoId:video.youtubeId,start,play:true,rate:this.playbackRate});
     document.querySelector('#youtube-player-host')?.scrollIntoView({block:'nearest',behavior:'smooth'});
   },
-  pause(){this.send({action:'pause'});},
+  setRate(value){this.playbackRate=this.rate(value);localStorage.setItem('wa-youtube-playback-rate',String(this.playbackRate));this.send({action:'rate',rate:this.playbackRate});},
+  applyRate(){this.send({action:'rate',rate:this.playbackRate});},
+  pause(){this.send({action:'pause',rate:this.playbackRate});},
   hide(){
     this.pause();if(this.native())this.native().postMessage({action:'hide'});
     const host=document.querySelector('#youtube-player-host');if(host)host.hidden=true;

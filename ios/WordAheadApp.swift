@@ -81,6 +81,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             web.trailingAnchor.constraint(equalTo:view.trailingAnchor)
         ])
         NotificationCenter.default.addObserver(self,selector:#selector(pauseYouTube),name:UIApplication.willResignActiveNotification,object:nil)
+        NotificationCenter.default.addObserver(self,selector:#selector(restoreYouTubeRate),name:UIApplication.didBecomeActiveNotification,object:nil)
         if let root = Bundle.main.url(forResource:"Web",withExtension:nil) {
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
         }
@@ -125,6 +126,10 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         if var command = playerCommand {command["play"] = false;playerCommand = command}
         if playerLoaded {playerWeb.evaluateJavaScript("WordAheadYouTube.load({action:'pause'})",completionHandler:nil)}
     }
+    @objc private func restoreYouTubeRate(){
+        guard playerLoaded,let rate=playerCommand?["rate"] as? Double,rate.isFinite,rate > 0 else {return}
+        playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil)
+    }
     private func sendPlayerCommand(){
         guard playerLoaded,let command = playerCommand,
               let data = try? JSONSerialization.data(withJSONObject:command),
@@ -134,16 +139,21 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     private func handleYouTube(_ data:[String:Any]){
         guard let action = data["action"] as? String else {return}
         if action == "pause" {pauseYouTube();return}
+        if action == "rate" { if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 { playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil) }; return }
         if action == "hide" {pauseYouTube();showYouTube(false);return}
         guard ["show","seek","load"].contains(action),let id = data["videoId"] as? String,
               id.range(of:"^[A-Za-z0-9_-]{11}$",options:.regularExpression) != nil else {return}
         showYouTube(true)
         let changed = playerVideoID != id
+        if action == "show", let rate=data["rate"] as? Double, rate.isFinite, rate > 0 {
+            playerCommand?["rate"] = rate
+            if playerLoaded { playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil) }
+        }
         if action != "show" || changed {
             let start = (data["start"] as? Double) ?? 0
             guard start.isFinite,start >= 0 else {return}
             playerVideoID = id
-            playerCommand = ["action":action == "seek" ? "seek" : "load","videoId":id,"start":start,"play":data["play"] as? Bool ?? false]
+            playerCommand = ["action":action == "seek" ? "seek" : "load","videoId":id,"start":start,"play":data["play"] as? Bool ?? false,"rate":data["rate"] as? Double ?? 1]
         }
         if !playerRequested {
             guard let url = Bundle.main.url(forResource:"youtube-player",withExtension:"html",subdirectory:"Web"),
