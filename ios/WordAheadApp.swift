@@ -182,7 +182,11 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
         if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
-        if message.name == "youtubeState",let data=message.body as? [String:Any],let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil);return}
+        if message.name == "youtubeState",let data=message.body as? [String:Any] {
+            if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {playerCommand?["rate"] = rate}
+            if let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil)}
+            return
+        }
         if message.name == "vocabularyExport",let text=message.body as? String,let data=text.data(using:.utf8),data.count <= 5_000_000 {
             do {
                 let url=FileManager.default.temporaryDirectory.appendingPathComponent("WordAhead-known-words.json")

@@ -7,7 +7,7 @@
   let player=null,ready=false,pending=null,currentId=null,timeTimer=null,playbackRate=1;
   const message=document.querySelector('#message'),external=document.querySelector('#external');
   function status(text){if(message)message.textContent=text;}
-  function publishTime(){if(!ready)return;const state=player.getPlayerState();if(state!==YT.PlayerState.PLAYING){clearInterval(timeTimer);timeTimer=null;return;}const payload={type:'wordahead-player-time',time:player.getCurrentTime()};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
+  function publishTime(){if(!ready)return;const state=player.getPlayerState();if(state!==YT.PlayerState.PLAYING){clearInterval(timeTimer);timeTimer=null;return;}const payload={type:'wordahead-player-time',time:player.getCurrentTime(),rate:player.getPlaybackRate()};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
   function apply(){
     if(!ready||!pending)return;
     const command=pending;
