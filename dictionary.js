@@ -24,12 +24,17 @@ const WordAheadDictionary = {
   async preferred(raw,key) {
     raw=raw.toLowerCase().replaceAll('’',"'");
     const exact=await this.lookup(raw);
-    if(exact?.[3]==='ko')return {entry:exact,word:raw};
-    const forms=new Set([key,...Array.from((exact?.[2]||'').matchAll(/(?:plural|participle|tense|comparative|superlative|form)[^.;]*?\bof\s+([A-Za-z]+(?:['-][A-Za-z]+)*)/g),x=>x[1].toLowerCase())]);
+    if(exact?.[3]==='ko'&&this.validMeaning(exact[2]))return {entry:exact,word:raw};
+    const stems=[];if(/ies$/.test(raw))stems.push(raw.slice(0,-3)+'y');if(/ied$/.test(raw))stems.push(raw.slice(0,-3)+'y');if(/(?:ing|ed)$/.test(raw)){const stem=raw.replace(/(?:ing|ed)$/,'');stems.push(stem,stem+'e',stem.replace(/(.)\1$/,'$1'));}if(raw.endsWith('s')&&!raw.endsWith('ss'))stems.push(raw.slice(0,-1),raw.slice(0,-2));
+    const forms=new Set([key,...stems,...Array.from((exact?.[2]||'').matchAll(/(?:plural|participle|tense|comparative|superlative|form)[^.;]*?\bof\s+([A-Za-z]+(?:['-][A-Za-z]+)*)/g),x=>x[1].toLowerCase())]);
     let fallback=null;
-    for(const word of forms){if(word===raw)continue;const entry=await this.lookup(word);if(entry?.[3]==='ko')return {entry,word};if(entry&&!fallback)fallback={entry,word};}
+    for(const word of forms){if(word===raw)continue;const entry=await this.lookup(word);if(entry?.[3]==='ko'&&this.validMeaning(entry[2]))return {entry,word};if(entry&&!fallback)fallback={entry,word};}
     return exact?{entry:exact,word:raw}:fallback;
   },
+  validMeaning(value){const text=String(value||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();return /[가-힣]/.test(text)&&!/(?:뜻풀이를?\s*추가|이\s*틀|rfdety|한국어 뜻풀이가 필요|사전Name|번역을 추가|정의가 필요|뜻을 확인하는|불러오는 중|사전에서 뜻)/i.test(text);},
+  readCache(){try{const value=JSON.parse(localStorage.getItem('wa-korean-meanings')||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}catch{return {}}},
+  cached(word){const entry=this.readCache()[word];return entry&&this.validMeaning(entry[2])?{word,entry}:null;},
+  remember(result){if(!result||!this.validMeaning(result.entry?.[2]))return result;const values=this.readCache();delete values[result.word];values[result.word]=[...result.entry];for(const key of Object.keys(values).slice(0,-1000))delete values[key];try{localStorage.setItem('wa-korean-meanings',JSON.stringify(values));}catch{}return result;},
   onlineCache:new Map(),
   async online(word,lang,signal) {
     const cacheKey=`${lang}:${word}`;
@@ -49,7 +54,7 @@ const WordAheadDictionary = {
       if(node.closest('li li')||node.closest('.NavFrame,.quotations'))continue;
       const copy=node.cloneNode(true);copy.querySelectorAll('ul,ol,dl,sup,.HQToggle,.citation-whole').forEach(x=>x.remove());
       const text=copy.textContent.replace(/\s+/g,' ').trim();
-      if(text&&definitions.length<3)definitions.push(text);
+      if(text&&definitions.length<3&&(lang!=='ko'||this.validMeaning(text)))definitions.push(text);
     }
     const result=definitions.length&&(lang!=='ko'||/[가-힣]/.test(definitions.join(' ')))?{word,entry:[phonetic,part,definitions.join('; '),lang],online:true}:null;
     this.onlineCache.set(cacheKey,result);while(this.onlineCache.size>200)this.onlineCache.delete(this.onlineCache.keys().next().value);
@@ -66,39 +71,40 @@ const WordAheadDictionary = {
       const data=await response.json();
       const doc=new DOMParser().parseFromString(data.responseData?.translatedText||'','text/html');
       const meaning=doc.body.textContent.trim();
-      if(Number(data.responseStatus)!==200||data.quotaFinished||!/[가-힣]/.test(meaning))return null;
+      if(Number(data.responseStatus)!==200||data.quotaFinished||!this.validMeaning(meaning))return null;
       const result={word,entry:[local?.entry[0]||'',local?.entry[1]||'',meaning,'ko'],online:true,translated:true};
       this.onlineCache.set(cacheKey,result);while(this.onlineCache.size>200)this.onlineCache.delete(this.onlineCache.keys().next().value);
       return result;
     }catch{return null;}finally{clearTimeout(timer);}
   },
   async resolve(raw,key) {
+    const cached=this.cached(raw.toLowerCase())||this.cached(key);if(cached)return cached;
     let local=null;try{local=await this.preferred(raw,key);}catch{}
+    if(local?.entry[3]==='ko'&&!this.validMeaning(local.entry[2]))local=null;
     if(local?.entry[3]==='ko'||navigator.onLine===false)return local;
     const words=[...new Set([raw.toLowerCase().replaceAll('’',"'"),local?.word,key].filter(Boolean))];
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
     try{
       for(const word of words){
         if(controller.signal.aborted)break;
-        try{const result=await this.online(word,'ko',controller.signal);if(result){result.entry[0]=result.entry[0]||local?.entry[0]||'';return result;}}catch{}
+        try{const result=await this.online(word,'ko',controller.signal);if(result){result.entry[0]=result.entry[0]||local?.entry[0]||'';return this.remember(result);}}catch{}
       }
     }finally{clearTimeout(timer);}
     const translated=await this.koreanTranslation(local?.word||words[0],local);
-    return translated||local;
+    return translated?this.remember(translated):local;
   },
   async show(raw,key) {
     const selection=currentWord;
     try {
       const result=await this.resolve(raw,key);
       if(currentWord!==selection)return;
-      if(!result){if(!selection.entry?.[2])$('#sheet-meaning').textContent='한글 뜻을 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 눌러주세요.';return;}
+      if(!result){if(!this.validMeaning(selection.entry?.[2]))$('#sheet-meaning').textContent='이 단어의 한글 뜻을 찾지 못했습니다. 잠시 후 다시 눌러주세요.';return;}
       const word=result.word,entry=[...result.entry];entry[2]=plainDictionaryMeaning(entry[2]);
-      if(entry[3]!=='ko'&&/[가-힣]/.test(selection.entry?.[2]||''))return;
+      if(entry[3]!=='ko'&&this.validMeaning(selection.entry?.[2]))return;
       selection.entry=entry;
       $('#sheet-part').textContent=entry[1];$('#sheet-phonetic').textContent=entry[0]||'';
       $('#sheet-meaning').textContent=entry[3]==='ko'?entry[2]:`한글 뜻을 불러오지 못했습니다.\n참고 영문: ${entry[2]}`;
-      $('#dictionary-source').href=result.translated?'https://mymemory.translated.net/':`https://${entry[3]==='ko'?'ko':'en'}.wiktionary.org/wiki/`+encodeURIComponent(word);
-      $('#dictionary-source').textContent=result.translated?`MyMemory 영한 번역 · ${word}`:`${result.online?'온라인':'내장'} Wiktionary · ${word}`;$('#dictionary-source').hidden=false;
+
       const existing=saved.find(x=>x.word===key);
       if(existing){existing.definition=entry[2];existing.phonetic=entry[0];existing.part=entry[1];persist();}
     }catch{if(currentWord===selection&&!DICTIONARY[key])$('#sheet-meaning').textContent='내장 사전을 불러올 수 없습니다.';}

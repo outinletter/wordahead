@@ -2,6 +2,7 @@ import UIKit
 import WebKit
 import AVFoundation
 import CryptoKit
+import StoreKit
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -39,14 +40,18 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     private var playerRequested = false
     private var playerVideoID: String?
     private var playerCommand: [String:Any]?
+    private var playerSettings: [String:Any] = UserDefaults.standard.dictionary(forKey:"WordAheadYouTubeSettings") ?? [:]
     private let speaker = AVSpeechSynthesizer()
     private let dictionaryStore = OfflineDictionaryStore()
+    private let subscriptions = WordAheadSubscriptionService()
+    private var transactionTask: Task<Void,Never>?
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red:0.96,green:0.96,blue:0.97,alpha:1)
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name:"captions")
         config.userContentController.add(self, name:"dictionaryStore")
+        config.userContentController.add(self, name:"billing")
         config.userContentController.add(self, name:"speak")
         config.userContentController.add(self, name:"vocabularyExport")
         config.userContentController.add(self, name:"youtubePlayer")
@@ -54,6 +59,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         playerConfig.allowsInlineMediaPlayback = true
         playerConfig.mediaTypesRequiringUserActionForPlayback = []
         playerConfig.userContentController.add(self,name:"youtubeState")
+        playerConfig.userContentController.add(self,name:"youtubeSettings")
         playerWeb = WKWebView(frame:.zero,configuration:playerConfig)
         playerWeb.navigationDelegate = self
         playerWeb.uiDelegate = self
@@ -88,6 +94,16 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         if let root = Bundle.main.url(forResource:"Web",withExtension:nil) {
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
         }
+        let service = subscriptions
+        transactionTask = Task { [weak self] in
+            for await result in StoreKit.Transaction.updates {
+                if case .verified(let transaction) = result {
+                    await transaction.finish()
+                    await service.refreshEntitlements()
+                    self?.web.evaluateJavaScript("if(typeof WordAheadBilling!=='undefined')WordAheadBilling.refresh()",completionHandler:nil)
+                }
+            }
+        }
         #if DEBUG
         if ProcessInfo.processInfo.environment["WORDAHEAD_PLAYER_SMOKE_TEST"] == "1" {
             handleYouTube(["action":"show","videoId":"M7lc1UVf-VE"])
@@ -119,7 +135,7 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         }
     }
     #endif
-    deinit {NotificationCenter.default.removeObserver(self)}
+    deinit {transactionTask?.cancel();NotificationCenter.default.removeObserver(self)}
     private func showYouTube(_ visible:Bool){
         playerWeb.isHidden = !visible
         playerHeight.constant = visible ? min(290,max(230,view.bounds.width*9/16+32)) : 0
@@ -127,15 +143,18 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
     }
     @objc private func pauseYouTube(){
         if var command = playerCommand {command["play"] = false;playerCommand = command}
-        if playerLoaded {playerWeb.evaluateJavaScript("WordAheadYouTube.load({action:'pause'})",completionHandler:nil)}
+        if playerLoaded {playerWeb.evaluateJavaScript("WordAheadYouTube.suspend()",completionHandler:nil)}
     }
     @objc private func restoreYouTubeRate(){
         applyStoredYouTubeRate()
         DispatchQueue.main.asyncAfter(deadline:.now()+0.8){ [weak self] in self?.applyStoredYouTubeRate() }
     }
     private func applyStoredYouTubeRate(){
-        guard playerLoaded,let rate=playerCommand?["rate"] as? Double,rate.isFinite,rate > 0 else {return}
-        playerWeb.evaluateJavaScript("WordAheadYouTube.setRate(\(rate))",completionHandler:nil)
+        guard playerLoaded else {return}
+        var settings = playerSettings
+        if settings["rate"] == nil {settings["rate"] = playerCommand?["rate"] ?? 1}
+        guard let data = try? JSONSerialization.data(withJSONObject:settings), let json = String(data:data,encoding:.utf8) else {return}
+        playerWeb.evaluateJavaScript("WordAheadYouTube.restoreSettings(\(json))",completionHandler:nil)
     }
     private func sendPlayerCommand(){
         guard playerLoaded,let command = playerCommand,
@@ -187,6 +206,16 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         web.evaluateJavaScript("typeof navigateBack === 'function' ? navigateBack() : history.back()",completionHandler:nil)
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
+        if message.name == "billing",message.webView === web,message.frameInfo.isMainFrame,
+           let request=message.body as? [String:String],let id=request["id"] {
+            Task {
+                let payload: [String:Any]
+                do {payload=["id":id,"result":try await subscriptions.handle(request)]}
+                catch {payload=["id":id,"error":"App Store에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."]}
+                if let data=try? JSONSerialization.data(withJSONObject:payload),let json=String(data:data,encoding:.utf8) {web.evaluateJavaScript("WordAheadBilling.receive(\(json))",completionHandler:nil)}
+            }
+            return
+        }
         if message.name == "dictionaryStore", message.webView === web, message.frameInfo.isMainFrame,
            let request = message.body as? [String:String], let id = request["id"] {
             Task {
@@ -203,9 +232,13 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             return
         }
         if message.name == "youtubePlayer",message.webView === web,message.frameInfo.isMainFrame,let data = message.body as? [String:Any] {handleYouTube(data);return}
+        if message.name == "youtubeSettings",message.webView === playerWeb,let data=message.body as? [String:Any] {
+            playerSettings = data;UserDefaults.standard.set(data,forKey:"WordAheadYouTubeSettings");return
+        }
         if message.name == "youtubeState",let data=message.body as? [String:Any] {
             if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {
                 playerCommand?["rate"] = rate
+                playerSettings["rate"] = rate;UserDefaults.standard.set(playerSettings,forKey:"WordAheadYouTubeSettings")
                 web.evaluateJavaScript("if(typeof WordAheadVideo!=='undefined'){WordAheadVideo.playbackRate=\(rate);localStorage.setItem('wa-youtube-playback-rate',String(\(rate)));}",completionHandler:nil)
             }
             if let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil)}
@@ -229,7 +262,11 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             Task {
                 var result: [String:Any]?
                 var failure: String?
-                do {result=try await CaptionFetcher.fetch(video)}catch {failure=error.localizedDescription}
+                do {
+                    guard await subscriptions.beginAnalysis(video) else {throw CaptionFailure.unavailable("무료 분석 한도에 도달했습니다.")}
+                    do {result=try await CaptionFetcher.fetch(video);await subscriptions.finishAnalysis(video,success:true)}
+                    catch {await subscriptions.finishAnalysis(video,success:false);throw error}
+                }catch {failure=error.localizedDescription}
                 let payload:[Any] = [id,(result as Any?) ?? NSNull(),(failure as Any?) ?? NSNull()]
                 if let encoded=try? JSONSerialization.data(withJSONObject:payload),let json=String(data:encoded,encoding:.utf8) {
                     await MainActor.run {self.web.evaluateJavaScript("WordAheadCaptions.complete(...\(json))",completionHandler:nil)}
@@ -390,5 +427,80 @@ actor OfflineDictionaryStore {
         }
         let count = manifest.shards.values.filter{FileManager.default.fileExists(atPath:root.appendingPathComponent($0.sha256+".json").path)}.count
         return ["complete":count == manifest.shards.count,"downloaded":count,"total":manifest.shards.count,"bytes":manifest.shards.values.reduce(0){$0+$1.bytes}]
+    }
+}
+
+// The quota applies to new learning analysis, never to YouTube playback.
+actor WordAheadSubscriptionService {
+    static let annualID = "com.addvalue.wordahead.plus.annual"
+    private var product: Product?
+    private var premium = false
+    private var pending: Set<String> = []
+    private let defaults: UserDefaults
+    init(defaults: UserDefaults = .standard) {self.defaults = defaults}
+    private var catalogAttempt: Date?
+    func refreshEntitlements() async {
+        var active = false
+        for await result in StoreKit.Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  transaction.productID == Self.annualID,transaction.revocationDate == nil,!transaction.isUpgraded else {continue}
+            active = true
+        }
+        premium = active
+    }
+    private func loadProduct() async {
+        guard product == nil,catalogAttempt == nil || Date().timeIntervalSince(catalogAttempt!) > 60 else {return}
+        catalogAttempt = Date()
+        if let value = try? await Product.products(for:[Self.annualID]).first,
+           value.type == .autoRenewable,value.subscription?.subscriptionPeriod.unit == .year,value.subscription?.subscriptionPeriod.value == 1 {
+            product = value;defaults.set(true,forKey:"WordAheadSubscriptionCatalogSeen")
+        }
+    }
+    private func todayIDs() -> Set<String> {
+        let formatter = DateFormatter();formatter.calendar = Calendar(identifier:.gregorian);formatter.locale = Locale(identifier:"en_US_POSIX");formatter.timeZone = .current;formatter.dateFormat = "yyyy-MM-dd"
+        let day = formatter.string(from:Date()),previous = defaults.string(forKey:"WordAheadAnalysisDay") ?? ""
+        if day > previous {defaults.set(day,forKey:"WordAheadAnalysisDay");defaults.set([String](),forKey:"WordAheadAnalysisIDs");pending.removeAll()}
+        return Set(defaults.stringArray(forKey:"WordAheadAnalysisIDs") ?? [])
+    }
+    private var enforced: Bool {product != nil || defaults.bool(forKey:"WordAheadSubscriptionCatalogSeen")}
+    private func allowed(_ id: String) -> Bool {
+        let ids = todayIDs(),known = Set(defaults.stringArray(forKey:"WordAheadAnalyzedVideos") ?? [])
+        return premium || !enforced || ids.contains(id) || known.contains(id) || pending.contains(id) || ids.union(pending).count < 3
+    }
+    func beginAnalysis(_ id: String) async -> Bool {
+        await refreshEntitlements();await loadProduct()
+        guard id.range(of:"^[A-Za-z0-9_-]{11}$",options:.regularExpression) != nil,allowed(id) else {return false}
+        pending.insert(id);return true
+    }
+    func finishAnalysis(_ id: String,success: Bool) {
+        pending.remove(id)
+        guard success else {return}
+        var known = Set(defaults.stringArray(forKey:"WordAheadAnalyzedVideos") ?? [])
+        if !known.contains(id) {var ids = todayIDs();ids.insert(id);defaults.set(Array(ids),forKey:"WordAheadAnalysisIDs")}
+        known.insert(id);defaults.set(Array(known),forKey:"WordAheadAnalyzedVideos")
+    }
+    private func snapshot() -> [String:Any] {
+        ["premium":premium,"available":product != nil,"enforced":enforced,"remaining":max(0,3-todayIDs().union(pending).count),"limit":3,"price":product?.displayPrice ?? ""]
+    }
+    func handle(_ request: [String:String]) async throws -> [String:Any] {
+        let action = request["action"] ?? "status"
+        await refreshEntitlements();await loadProduct()
+        var purchase = ""
+        if action == "restore" {try await AppStore.sync();await refreshEntitlements()}
+        if action == "purchase" {
+            guard let product else {throw URLError(.cannotConnectToHost)}
+            switch try await product.purchase() {
+            case .success(let verification):
+                guard case .verified(let transaction) = verification,transaction.productID == Self.annualID else {throw URLError(.userAuthenticationRequired)}
+                await transaction.finish();await refreshEntitlements();purchase = "success"
+            case .pending:purchase = "pending"
+            case .userCancelled:purchase = "cancelled"
+            @unknown default:purchase = "unknown"
+            }
+        }
+        var state = snapshot()
+        if action == "authorize",let id=request["videoId"] {state["allowed"] = allowed(id)}
+        if !purchase.isEmpty {state["purchase"] = purchase}
+        return state
     }
 }

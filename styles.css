@@ -83,3 +83,13 @@ button:disabled{cursor:default;opacity:.55}
 .word-sheet{padding-top:14px}
 .word-sheet .sheet-grabber{height:12px;margin:0 auto 4px;padding:4px 0}
 .word-sheet .sheet-close{top:8px}
+
+/* Size to content, with the compact sheet ceiling retained. */
+.word-sheet{height:auto;min-height:0;max-height:clamp(140px,18dvh,168px);padding-bottom:calc(6px + env(safe-area-inset-bottom));overflow-y:auto}
+.word-sheet .meaning{max-height:none;overflow:visible;margin-bottom:0}
+.subscription-price{font-size:21px;font-weight:700}
+#subscription-dialog p{line-height:1.5;font-size:14px}#subscription-dialog button{margin-top:8px}
+.analysis-notice{padding:18px;line-height:1.5}.analysis-notice button{margin:6px}
+#subscription-dialog a{color:var(--teal-dark)}
+#subscription-dialog #purchase-annual,#subscription-dialog #restore-purchases{margin:4px 6px 4px 0}
+.dark-mode #subscription-dialog a{color:#a5dfcc}

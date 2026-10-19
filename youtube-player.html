@@ -4,10 +4,25 @@
 <div id="player"></div>
 <script>
 (() => {
-  let player=null,ready=false,pending=null,currentId=null,timeTimer=null,playbackRate=1;
+  let player=null,ready=false,pending=null,currentId=null,timeTimer=null,playbackRate=1,suspended=false,restoringRate=null,settings={};
   const message=document.querySelector('#message'),external=document.querySelector('#external');
   function status(text){if(message)message.textContent=text;}
-  function publishTime(){if(!ready)return;const state=player.getPlayerState();if(state!==YT.PlayerState.PLAYING){clearInterval(timeTimer);timeTimer=null;return;}const payload={type:'wordahead-player-time',time:player.getCurrentTime(),rate:player.getPlaybackRate()};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
+  function publishTime(){if(!ready||suspended)return;const state=player.getPlayerState();if(state!==YT.PlayerState.PLAYING){clearInterval(timeTimer);timeTimer=null;return;}const payload={type:'wordahead-player-time',time:player.getCurrentTime(),rate:restoringRate??player.getPlaybackRate()};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
+  function captureSettings(){
+    if(!ready)return settings;
+    settings={...settings,rate:playbackRate};
+    try{settings.volume=player.getVolume();settings.muted=player.isMuted();const size=player.getOption('captions','fontSize');if(Number.isFinite(size))settings.captionFontSize=size;}catch{}
+    try{localStorage.setItem('wordahead-player-settings',JSON.stringify(settings));}catch{}
+    try{window.webkit?.messageHandlers?.youtubeSettings?.postMessage(settings);}catch{}
+    return settings;
+  }
+  function restoreSettings(value){
+    if(value&&typeof value==='object')settings={...settings,...value};suspended=false;
+    if(!ready)return;
+    if(Number.isFinite(settings.rate)&&settings.rate>0){playbackRate=settings.rate;restoringRate=playbackRate;if(player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);else restoringRate=null;}
+    try{if(Number.isFinite(settings.volume))player.setVolume(settings.volume);if(settings.muted===true)player.mute();else if(settings.muted===false)player.unMute();if(Number.isFinite(settings.captionFontSize))player.setOption('captions','fontSize',settings.captionFontSize);}catch{}
+  }
+  try{settings=JSON.parse(localStorage.getItem('wordahead-player-settings')||'{}');if(Number.isFinite(settings.rate))playbackRate=settings.rate;}catch{}
   function apply(){
     if(!ready||!pending)return;
     const command=pending;pending=null;
@@ -35,7 +50,9 @@
       if(!/^[A-Za-z0-9_-]{11}$/.test(command.videoId||'')||typeof command.start!=='number'||!Number.isFinite(command.start)||command.start<0)return;
       pending=command;apply();
     },
-    setRate(rate){const value=Number(rate);if(!Number.isFinite(value)||value<=0)return;playbackRate=value;if(pending)pending={...pending,rate:value};if(ready&&player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);},
+    getSettings:captureSettings,restoreSettings,
+    suspend(){captureSettings();suspended=true;this.load({action:'pause'});},
+    setRate(rate){const value=Number(rate);if(!Number.isFinite(value)||value<=0)return;playbackRate=value;settings.rate=value;if(pending)pending={...pending,rate:value};if(ready&&player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);},
     getState(){return {ready,videoId:currentId,time:ready?player.getCurrentTime():0,state:ready?player.getPlayerState():null};}
   };
   window.addEventListener('message',event=>{
@@ -45,9 +62,10 @@
   window.onYouTubeIframeAPIReady=()=>{
     const base=new URL(document.baseURI).origin;
     player=new YT.Player('player',{width:'100%',height:'100%',playerVars:{playsinline:1,controls:1,origin:base},events:{
-      onReady(){ready=true;apply();player.setPlaybackRate(playbackRate);},
+      onReady(){ready=true;apply();restoreSettings(settings);player.setPlaybackRate(playbackRate);},
       onStateChange(event){if(event.data===YT.PlayerState.PLAYING){if(player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);if(!timeTimer)timeTimer=setInterval(publishTime,300);}else{clearInterval(timeTimer);timeTimer=null;}},
-      onPlaybackRateChange(event){if(Number.isFinite(event.data)&&event.data>0){playbackRate=event.data;const payload={type:'wordahead-player-time',rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}},
+      onPlaybackRateChange(event){if(Number.isFinite(event.data)&&event.data>0&&!suspended){if(restoringRate!==null&&event.data!==restoringRate)return;restoringRate=null;playbackRate=event.data;settings.rate=playbackRate;const payload={type:'wordahead-player-time',rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}},
+      onApiChange(){if(restoringRate!==null)restoreSettings(settings);},
       onError(event){status([101,150].includes(event.data)?'이 영상은 앱 내 재생이 제한되어 있어요.':event.data===153?'플레이어 연결 인증을 확인할 수 없습니다.':event.data===100?'삭제되었거나 비공개인 영상입니다.':'영상을 재생할 수 없습니다. YouTube에서 열어주세요.');},
       onAutoplayBlocked(){status('플레이어의 재생 버튼을 한 번 눌러주세요. 이후 자막 시간으로 이동할 수 있어요.');}
     }});
@@ -55,6 +73,6 @@
   const script=document.createElement('script');script.src='https://www.youtube.com/iframe_api';
   script.onerror=()=>status('YouTube에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.');document.head.append(script);
   setTimeout(()=>{if(!ready)status('플레이어 연결이 지연되고 있어요. YouTube에서 열 수도 있습니다.');},15000);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)window.WordAheadYouTube.load({action:'pause'});});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)window.WordAheadYouTube.suspend();else window.WordAheadYouTube.restoreSettings(settings);});
 })();
 </script></body></html>

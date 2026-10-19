@@ -6,6 +6,7 @@ const WordAheadCaptions = {
     $('#reader-title').textContent=video.title;
     $('#transcript-content').innerHTML='<p class="empty-state" role="status">영어 자막을 수집하고 있어요…</p>';
     try {
+      if(!await WordAheadBilling.beforeAnalysis(video)){WordAheadBilling.showLimit(video);return;}
       const data=await this.fetch(video.youtubeId);
       if(activeVideo!==video||$('#reader-view').hidden)return;
       const cleanSegment=x=>({...x,text:String(x.text||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()});
@@ -15,7 +16,9 @@ const WordAheadCaptions = {
       persist();renderCards();openReader(video);
     } catch(error) {
       if(activeVideo!==video||$('#reader-view').hidden)return;
-      $('#transcript-content').innerHTML=`<div class="empty-state"><p>${escapeHtml(error.message)}</p><button class="primary-button" data-action="read" data-id="${escapeHtml(video.id)}">다시 시도</button><button class="text-button" id="manual-caption">자막 직접 입력</button></div>`;
+      if(error.message.includes('무료 분석 한도')){WordAheadBilling.showLimit(video);return;}
+      const offline=navigator.onLine===false?'저장된 자막과 단어장은 오프라인에서도 이용할 수 있습니다. YouTube 다운로드 영상은 YouTube 앱에서 열어주세요.':error.message;
+      $('#transcript-content').innerHTML=`<div class="empty-state"><p>${escapeHtml(offline)}</p><button class="primary-button" data-action="read" data-id="${escapeHtml(video.id)}">다시 시도</button><button class="text-button" id="manual-caption">자막 직접 입력</button></div>`;
       $('#manual-caption').onclick=()=>openCaptionDialog(video);
     }
   },
