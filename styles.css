@@ -76,3 +76,5 @@ button:disabled{cursor:default;opacity:.55}
 .preview-page .preview-word-content small{font-size:14px;line-height:1.4;padding-top:3px;color:#43534e}
 .dark-mode .preview-page .preview-word-content small{color:#d2dfdb}
 .preview-page .preview-word-heading button{border-radius:50%;color:var(--teal-dark)}
+
+.preview-page .preview-word-heading .speak-button{width:28px;height:28px;min-height:28px;flex-basis:28px;border:0;border-radius:50%;background:#f5f7f5;color:#536c70;font-size:12px;line-height:1}
