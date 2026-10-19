@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const root=process.cwd();
+const basic=fs.readFileSync('dictionary/basic-vocabulary.js','utf8'),extra=fs.readFileSync('dictionary/extended-basic.js','utf8'),app=fs.readFileSync('app.js','utf8');
+const ctx=vm.createContext({console});vm.runInContext(basic,ctx);const before=vm.runInContext('new Set(WordAheadBasicVocabulary)',ctx);vm.runInContext(extra,ctx);
+const heads=fs.readFileSync('dictionary/frequency-4000-headwords.txt','utf8').trim().split('\n');assert.equal(new Set(heads).size,4000);for(const word of heads)assert(vm.runInContext('isBasicVocabulary('+JSON.stringify(word)+')',ctx));
+for(const word of before)assert(vm.runInContext('isBasicVocabulary('+JSON.stringify(word)+')',ctx));
+vm.runInContext(app.slice(0,app.indexOf('const $=')),ctx);
+const fn=name=>{const start=app.indexOf('function '+name+'(');const end=app.indexOf('\nfunction ',start+1);return app.slice(start,end);};
+vm.runInContext('const saved=[];const profiles={};const knownWords=new Set();'+fn('normalize')+fn('wordDifficulty')+fn('suggestWords'),ctx);
+const result=vm.runInContext('suggestWords({text:"airport airports cinema cinemas photosynthesis microarchitecture"}).map(x=>x.raw)',ctx);
+assert(!result.includes('airport')&&!result.includes('airports')&&!result.includes('cinema')&&!result.includes('cinemas'));assert(result.includes('photosynthesis')&&result.includes('microarchitecture'));
+vm.runInContext('knownWords.add(normalize("photosynthesis"))',ctx);const after=vm.runInContext('suggestWords({text:"photosynthesis microarchitecture"}).map(x=>x.raw)',ctx);assert(!after.includes('photosynthesis'));
+console.log('PASS: 4,000 headwords excluded; all prior NGSL forms retained; plural forms excluded; specialist terms remain; known words excluded');
+console.log('Total forms:',vm.runInContext('WordAheadBasicVocabulary.size',ctx));
