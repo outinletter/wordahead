@@ -51,7 +51,7 @@ body.reading .reader-top{grid-template-columns:40px minmax(0,1fr);gap:4px}body.r
 .preview-page .preview-word-heading button{flex:0 0 28px;display:inline-grid;place-items:center;width:28px;height:28px;min-height:28px;padding:0;font-size:14px;line-height:1;background:transparent}
 .preview-page .preview-word-content small{grid-column:2;grid-row:1;display:block;margin:0;padding-top:3px;height:auto;max-height:none;overflow:visible;-webkit-line-clamp:unset;overflow-wrap:anywhere;white-space:normal}
 
-.word-sheet{height:23dvh;min-height:160px;max-height:23dvh;overflow-y:auto}
+.word-sheet{height:clamp(140px,18dvh,168px);min-height:0;max-height:168px;overflow-y:auto}
 
 /* Shared surfaces, readable dark controls, and small-screen dialog bounds. */
 .modal{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain}
