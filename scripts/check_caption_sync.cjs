@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync('app.js','utf8');
+const context={Intl};vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function cleanCaptionText'),source.indexOf('function openReader')),context);
+const cues=context.captionSentences({segments:[{start:'10',text:'Later.'},{start:2,text:'First.'},{start:2,text:'Second.'},{start:'invalid',text:'Bad.'}]});
+assert.equal(cues.length,2);assert.equal(cues[0].start,2);assert.equal(cues[0].text,'First. Second.');assert.equal(cues[1].start,10);
+const makeLine=start=>{const values=new Set();return{dataset:{cueStart:String(start)},getBoundingClientRect:()=>({top:200}),classList:{contains:c=>values.has(c),remove:c=>values.delete(c),toggle(c,on){on?values.add(c):values.delete(c)}}};};
+let lines=[makeLine(2),makeLine(10)];
+const playbackContext={window:{addEventListener(){},scrollTo(){},scrollY:0},activeVideo:{youtubeId:'current'},Number,Math,getComputedStyle:()=>({lineHeight:'32px'}),$:s=>s==='#reader-view'?{hidden:false}:{getBoundingClientRect:()=>({bottom:60})},$$:()=>lines};
+vm.createContext(playbackContext);vm.runInContext(source.slice(source.indexOf('window.WordAheadPlayback='),source.indexOf("window.addEventListener('wordahead:playbackrate'")),playbackContext);
+const player=playbackContext.window.WordAheadPlayback;
+player.update(11,'current');assert(lines[1].classList.contains('audio-active'));
+lines=[makeLine(2),makeLine(10)];player.update(11,'current');assert(lines[1].classList.contains('audio-active'));
+player.update(3,'stale-video');assert(lines[1].classList.contains('audio-active'));
+player.update(3,'current');assert(lines[0].classList.contains('audio-active'));assert(!lines[1].classList.contains('audio-active'));
+console.log('PASS: cue ordering/merging, highlight after rerender, stale video ignored, backwards seek');

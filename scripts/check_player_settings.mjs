@@ -24,3 +24,5 @@ if(states.at(-1).rate!==.75)throw Error('Transient reset overwrote saved rate');
 if(!calls.some(c=>c[0]==='caption'&&c[1]===2))throw Error('Caption size not restored');
 if(calls.filter(c=>['load','cue','seek','play'].includes(c[0])).length!==moves)throw Error('Resume restored position instead of settings');
 console.log('PASS: background reset ignored; rate and supported caption settings restored without seeking');
+
+api.suspend();const n=states.length;events.onStateChange({data:1});tick();if(states.length<=n)throw Error('Manual playback after suspend failed to resume caption timing');console.log('PASS: time updates resume after navigation or speech pause');

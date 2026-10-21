@@ -225,7 +225,8 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
                     let data = try JSONSerialization.data(withJSONObject:payload)
                     if let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("WordAheadDictionary.receive(\(json))",completionHandler:nil)}
                 } catch {
-                    let data = try? JSONSerialization.data(withJSONObject:["id":id,"error":"사전 다운로드에 실패했습니다. Wi-Fi 연결을 확인하고 다시 시도해주세요."])
+                    let reason = request["action"] == "online" ? "온라인 사전이 응답하지 않습니다. 잠시 후 다시 조회해주세요." : "사전을 불러오지 못했습니다. Wi-Fi 연결과 저장 공간을 확인해주세요."
+                    let data = try? JSONSerialization.data(withJSONObject:["id":id,"error":reason])
                     if let data, let json = String(data:data,encoding:.utf8) {web.evaluateJavaScript("WordAheadDictionary.receive(\(json))",completionHandler:nil)}
                 }
             }
@@ -235,13 +236,14 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
         if message.name == "youtubeSettings",message.webView === playerWeb,let data=message.body as? [String:Any] {
             playerSettings = data;UserDefaults.standard.set(data,forKey:"WordAheadYouTubeSettings");return
         }
-        if message.name == "youtubeState",let data=message.body as? [String:Any] {
+        if message.name == "youtubeState",message.webView === playerWeb,let data=message.body as? [String:Any] {
+            if let video=data["videoId"] as? String,video != playerVideoID {return}
             if let rate=data["rate"] as? Double,rate.isFinite,rate > 0 {
                 playerCommand?["rate"] = rate
                 playerSettings["rate"] = rate;UserDefaults.standard.set(playerSettings,forKey:"WordAheadYouTubeSettings")
                 web.evaluateJavaScript("if(typeof WordAheadVideo!=='undefined'){WordAheadVideo.playbackRate=\(rate);localStorage.setItem('wa-youtube-playback-rate',String(\(rate)));}",completionHandler:nil)
             }
-            if let time=data["time"] as? Double,time.isFinite {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time))",completionHandler:nil)}
+            if let time=data["time"] as? Double,time.isFinite,let id=playerVideoID,let json=try? JSONSerialization.data(withJSONObject:[id]),let encoded=String(data:json,encoding:.utf8) {web.evaluateJavaScript("window.WordAheadPlayback?.update(\(time),\(encoded)[0])",completionHandler:nil)}
             return
         }
         if message.name == "vocabularyExport",let text=message.body as? String,let data=text.data(using:.utf8),data.count <= 5_000_000 {
@@ -383,6 +385,14 @@ actor OfflineDictionaryStore {
         return url
     }
     func handle(_ request: [String:String]) async throws -> [String:Any] {
+        if request["action"] == "online" {
+            guard let address=request["url"],address.count<=4000,let url=URL(string:address),url.scheme=="https",
+                  (url.host=="ko.wiktionary.org" && url.path=="/w/api.php") || (url.host=="api.mymemory.translated.net" && url.path=="/get") else {throw URLError(.badURL)}
+            var query=URLRequest(url:url,timeoutInterval:12);query.setValue("WordAhead/1.1 (https://outinletter.github.io/wordahead/support.html)",forHTTPHeaderField:"User-Agent")
+            let (data,response)=try await URLSession.shared.data(for:query)
+            guard let status=(response as? HTTPURLResponse)?.statusCode,(200..<300).contains(status),data.count<3_000_000,let text=String(data:data,encoding:.utf8) else {throw URLError(.badServerResponse)}
+            return ["json":text]
+        }
         let manifest = try manifest(), root = try directory()
         if request["action"] == "lookup" {
             let key = request["word"] ?? ""

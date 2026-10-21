@@ -93,3 +93,13 @@ button:disabled{cursor:default;opacity:.55}
 #subscription-dialog a{color:var(--teal-dark)}
 #subscription-dialog #purchase-annual,#subscription-dialog #restore-purchases{margin:4px 6px 4px 0}
 .dark-mode #subscription-dialog a{color:#a5dfcc}
+
+/* Keep meanings close to each word while allowing long entries to wrap. */
+.preview-page .preview-word>.preview-word-content{grid-template-columns:fit-content(48%) minmax(0,1fr);column-gap:8px}
+.word-sheet{padding-top:6px;transform:translate(-50%,var(--sheet-drag,0px))}
+.word-sheet .sheet-grabber{display:block;width:52px;height:18px;min-height:18px;margin:0 auto 2px;padding:6px 0;border:0;background:transparent;touch-action:none;cursor:grab}
+.word-sheet .sheet-grabber span{display:block;width:36px;height:4px;margin:auto;border-radius:4px;background:#879792}
+.word-sheet .sheet-word-row{padding-right:0}
+.dictionary-retry{border:0;background:transparent;color:#b9e8d9;padding:3px 0;font:inherit;font-size:12px;cursor:pointer}
+.preview-word-content .dictionary-retry{color:var(--teal-dark);margin-left:5px}
+#offline-offer .settings-actions{gap:8px;flex-wrap:wrap}

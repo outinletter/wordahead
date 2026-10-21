@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const values=new Map();const context={document:{querySelector:()=>null},window:{},navigator:{onLine:true},localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},setTimeout,clearTimeout,AbortController,console};
+const values=new Map();const context={document:{querySelector:()=>null,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){}},navigator:{onLine:true},localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)},setTimeout,clearTimeout,AbortController,URLSearchParams,console};
 vm.createContext(context);vm.runInContext(fs.readFileSync('dictionary.js','utf8')+';globalThis.dictionary=WordAheadDictionary',context);
-(async()=>{const d=context.dictionary;
+(async()=>{const d=context.dictionary,translate=d.koreanTranslation;
 for(const text of ['낱말은 한국어 뜻풀이가 필요합니다. 뜻풀이를 추가한 다음 이 틀 ({rfdety})을 지워 주세요','사전Name','불러오는 중…'])assert(!d.validMeaning(text));
 assert(d.validMeaning('전송; 전달'));values.set('wa-korean-meanings','null');assert.deepEqual(d.readCache(),{});
 d.lookup=async word=>word==='transmission'?['','','전송','ko']:null;
@@ -9,5 +9,9 @@ assert.equal((await d.preferred('transmissions','transmissions')).entry[2],'전�
 d.preferred=async()=>({word:'rev',entry:['','','뜻풀이를 추가해 주세요','ko']});
 d.online=async()=>null;let calls=0;d.koreanTranslation=async()=>{calls++;return{word:'rev',entry:['','','회전시키다','ko']}};
 assert.equal((await d.resolve('rev','rev')).entry[2],'회전시키다');assert.equal((await d.resolve('rev','rev')).entry[2],'회전시키다');assert.equal(calls,1);
+context.DOMParser=class{parseFromString(text){return{body:{textContent:text}}}};
+d.json=async()=>({responseStatus:200,quotaFinished:false,responseData:{translatedText:'사전Name'},matches:[{segment:'Distraction',translation:'기분전환',match:.97},{segment:'Persistent distraction',translation:'끈질긴 방해',match:.66}]});
+const alternative=await translate.call(d,'distraction',null);assert.equal(alternative.entry[2],'기분전환');
+d.json=async()=>({responseStatus:429,quotaFinished:true});assert.equal(await translate.call(d,'unavailable',null),null);assert(d.failureMessage('unavailable','unavailable').includes('이용량 제한'));
 console.log('PASS: editorial garbage rejected, inflections resolve, online Korean results persist');
 })().catch(e=>{console.error(e);process.exit(1)});
