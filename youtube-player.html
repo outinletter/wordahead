@@ -4,10 +4,11 @@
 <div id="player"></div>
 <script>
 (() => {
-  let player=null,ready=false,pending=null,currentId=null,timeTimer=null,playbackRate=1,suspended=false,restoringRate=null,settings={};
+  let player=null,ready=false,pending=null,currentId=null,timeTimer=null,playbackRate=1,suspended=false,restoringRate=null,resumeUntil=0,settings={};
   const message=document.querySelector('#message'),external=document.querySelector('#external');
   function status(text){if(message)message.textContent=text;}
-  function publishTime(){if(!ready||suspended)return;const state=player.getPlayerState();if(![YT.PlayerState.PLAYING,2,5].includes(state))return;const actual=player.getVideoData?.().video_id;if(actual&&currentId&&actual!==currentId)return;const payload={type:'wordahead-player-time',videoId:currentId,time:player.getCurrentTime(),rate:restoringRate??player.getPlaybackRate()};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
+  function reconcileRate(){if(Date.now()<resumeUntil&&player.getPlaybackRate()!==playbackRate){restoringRate=playbackRate;player.setPlaybackRate(playbackRate);}}
+  function publishTime(){if(!ready||suspended)return;reconcileRate();const state=player.getPlayerState();if(![YT.PlayerState.PLAYING,2,5].includes(state))return;const actual=player.getVideoData?.().video_id;if(actual&&currentId&&actual!==currentId)return;const payload={type:'wordahead-player-time',videoId:currentId,time:player.getCurrentTime(),rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
   function captureSettings(){
     if(!ready)return settings;
     settings={...settings,rate:playbackRate};
@@ -17,7 +18,7 @@
     return settings;
   }
   function restoreSettings(value){
-    if(value&&typeof value==='object')settings={...settings,...value};suspended=false;
+    if(value&&typeof value==='object')settings={...settings,...value};suspended=false;resumeUntil=Date.now()+5000;
     if(!ready)return;
     if(Number.isFinite(settings.rate)&&settings.rate>0){playbackRate=settings.rate;restoringRate=playbackRate;if(player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);else restoringRate=null;}
     try{if(Number.isFinite(settings.volume))player.setVolume(settings.volume);if(settings.muted===true)player.mute();else if(settings.muted===false)player.unMute();if(Number.isFinite(settings.captionFontSize))player.setOption('captions','fontSize',settings.captionFontSize);}catch{}
@@ -63,8 +64,8 @@
     const base=new URL(document.baseURI).origin;
     player=new YT.Player('player',{width:'100%',height:'100%',playerVars:{playsinline:1,controls:1,origin:base},events:{
       onReady(){ready=true;apply();restoreSettings(settings);player.setPlaybackRate(playbackRate);if(!timeTimer)timeTimer=setInterval(publishTime,300);},
-      onStateChange(event){if(event.data===YT.PlayerState.PLAYING&&!document.hidden){suspended=false;if(player.getPlaybackRate()!==playbackRate)player.setPlaybackRate(playbackRate);}publishTime();},
-      onPlaybackRateChange(event){if(Number.isFinite(event.data)&&event.data>0&&!suspended){if(restoringRate!==null&&event.data!==restoringRate)return;restoringRate=null;playbackRate=event.data;settings.rate=playbackRate;const payload={type:'wordahead-player-time',rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}},
+      onStateChange(event){if(event.data===YT.PlayerState.PLAYING&&!document.hidden){if(suspended)resumeUntil=Date.now()+5000;suspended=false;if(player.getPlaybackRate()!==playbackRate){restoringRate=playbackRate;player.setPlaybackRate(playbackRate);}}publishTime();},
+      onPlaybackRateChange(event){if(Number.isFinite(event.data)&&event.data>0&&!suspended){if(Date.now()<resumeUntil&&event.data!==playbackRate){reconcileRate();return;}restoringRate=null;playbackRate=event.data;settings.rate=playbackRate;const payload={type:'wordahead-player-time',rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}},
       onApiChange(){if(restoringRate!==null)restoreSettings(settings);},
       onError(event){status([101,150].includes(event.data)?'이 영상은 앱 내 재생이 제한되어 있어요.':event.data===153?'플레이어 연결 인증을 확인할 수 없습니다.':event.data===100?'삭제되었거나 비공개인 영상입니다.':'영상을 재생할 수 없습니다. YouTube에서 열어주세요.');},
       onAutoplayBlocked(){status('플레이어의 재생 버튼을 한 번 눌러주세요. 이후 자막 시간으로 이동할 수 있어요.');}
