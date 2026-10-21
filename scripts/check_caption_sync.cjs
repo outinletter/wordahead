@@ -14,3 +14,9 @@ lines=[makeLine(2),makeLine(10)];player.update(11,'current');assert(lines[1].cla
 player.update(3,'stale-video');assert(lines[1].classList.contains('audio-active'));
 player.update(3,'current');assert(lines[0].classList.contains('audio-active'));assert(!lines[1].classList.contains('audio-active'));
 console.log('PASS: cue ordering/merging, highlight after rerender, stale video ignored, backwards seek');
+
+const fragments=[{start:0,text:'I understand'},{start:1,text:'that learning a language'},{start:2,text:'takes time.'},{start:3,text:'This is'},{start:4,text:'another complete sentence.'}];
+const grouped=context.captionSentences({segments:fragments});assert.equal(grouped.length,2);assert.equal(grouped[0].start,0);assert.equal(grouped[1].start,3);assert.equal(grouped[0].text,'I understand that learning a language takes time.');
+const unpunctuated=Array.from({length:20},(_,i)=>({start:i,text:'a short subtitle fragment'}));const blocks=context.captionSentences({segments:unpunctuated});assert(blocks.length<unpunctuated.length);assert(blocks.every(b=>b.text.length>=90));assert.equal(blocks.map(x=>x.text).join(' '),unpunctuated.map(x=>x.text).join(' '));
+const title=context.captionSentences({segments:[{start:0,text:'Dr.'},{start:1,text:'Smith is speaking.'}]});assert.equal(title.length,1);
+console.log('PASS: fragments group into sentences or larger blocks without text loss or invented timestamps');

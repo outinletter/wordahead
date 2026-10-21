@@ -126,7 +126,7 @@ async function refreshOfflineDictionary(){
 async function downloadOfflineDictionary(){
  const button=document.querySelector('#download-dictionary'),status=document.querySelector('#dictionary-status');
  button.disabled=true;status.textContent='Wi-Fi로 다운로드 중입니다. 앱을 열어두세요. 중단되면 다음에 이어받습니다.';
- try{await WordAheadDictionary.native('download');await refreshOfflineDictionary();return true;}catch(error){button.disabled=false;status.textContent=error.message;return false;}
+ try{const result=await WordAheadDictionary.native('download');await refreshOfflineDictionary();if(result.busy)status.textContent='사전을 이미 저장 중입니다. 잠시 후 다시 확인해주세요.';return result.complete===true;}catch(error){button.disabled=false;status.textContent=error.message;return false;}
 }
 document.querySelector('#download-dictionary')?.addEventListener('click',downloadOfflineDictionary);
 async function offerOfflineDictionary(){
@@ -138,7 +138,7 @@ async function offerOfflineDictionary(){
 document.querySelector('#offline-later')?.addEventListener('click',()=>document.querySelector('#offline-offer').close());
 document.querySelector('#offline-save')?.addEventListener('click',async()=>{
  const button=document.querySelector('#offline-save'),status=document.querySelector('#offline-offer-status');button.disabled=true;document.querySelector('#offline-later').textContent='닫기';status.textContent='Wi-Fi로 저장 중입니다. 앱을 열어두세요.';
- const complete=await downloadOfflineDictionary();status.textContent=complete?'오프라인 사전을 저장했습니다.':document.querySelector('#dictionary-status').textContent;button.disabled=complete;button.textContent=complete?'저장 완료':'다시 저장';
+ const complete=await downloadOfflineDictionary();status.textContent=complete?'오프라인 사전을 저장했습니다.':document.querySelector('#dictionary-status').textContent;button.disabled=complete;button.textContent=complete?'저장 완료':'다시 저장';if(complete){localStorage.setItem('wa-offline-offer','complete');const dialog=document.querySelector('#offline-offer');if(dialog.open)dialog.close();}
 });
 refreshOfflineDictionary();
 document.addEventListener('DOMContentLoaded',offerOfflineDictionary,{once:true});

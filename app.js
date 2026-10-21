@@ -40,8 +40,15 @@ history.replaceState({view:'home'},'','#home');window.addEventListener('popstate
 function setView(name,record=true){if(name!=='reader'){saveReaderPosition();WordAheadVideo.hide();}else WordAheadVideo.show(activeVideo);if(record&&history.state?.view!==name)history.pushState({view:name},'',`#${name}`);document.body.classList.toggle('reading',name==='reader');document.body.classList.toggle('previewing',name==='preview');$('#reader-view').hidden=true;setWordSheet(false);$$('.view').forEach(v=>v.hidden=true);if(name==='preview'){$('#preview-dialog').hidden=false;window.scrollTo(0,0);return}$('#preview-dialog').hidden=true;if(name==='reader'){$('#reader-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.remove('active'));restoreReaderPosition();return}$(name==='library'?'#library-view':'#home-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));renderLibrary();window.scrollTo(0,0)}
 function cleanCaptionText(value){return String(value||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()}
 function captionSentences(video){
- const cues=(video.segments||[]).map(x=>({text:cleanCaptionText(x.text),start:Number(x.start)})).filter(x=>x.text&&Number.isFinite(x.start)&&x.start>=0).sort((a,b)=>a.start-b.start);
- if(cues.length){const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start)last.text+=' '+cue.text;else merged.push({...cue});}return merged;}
+ const cues=(video.segments||[]).filter(x=>x.start!==null&&x.start!==undefined&&x.start!=='').map(x=>({text:cleanCaptionText(x.text),start:Number(x.start)})).filter(x=>x.text&&Number.isFinite(x.start)&&x.start>=0).sort((a,b)=>a.start-b.start);
+ if(cues.length){
+  const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start)last.text+=' '+cue.text;else merged.push({...cue});}
+  const groups=[];let pending=null;
+  const sentenceEnd=text=>/[.!?]["'”’\])]*$/.test(text)&&!/(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$/i.test(text);
+  for(const cue of merged){if(!pending)pending={...cue};else pending.text+=' '+cue.text;if(sentenceEnd(pending.text)||pending.text.length>=90){groups.push(pending);pending=null;}}
+  if(pending){if(groups.length&&!sentenceEnd(pending.text))groups.at(-1).text+=' '+pending.text;else groups.push(pending);}
+  return groups;
+ }
  const text=cleanCaptionText(video.text).replace(/\s+/g,' ');return Array.from(new Intl.Segmenter('en',{granularity:'sentence'}).segment(text),({segment})=>({text:cleanCaptionText(segment),start:null})).filter(x=>x.text);
 }
 function openReader(video){if(video.youtubeId&&!video.text){WordAheadCaptions.open(video);return}if(!video.text){openCaptionDialog(video);return}saveReaderPosition();activeVideo=video;$('#reader-title').textContent=video.title;$('#reader-title').title=video.title;$('#side-title').textContent=video.title;$('#reader-thumbnail').style.backgroundImage=video.image?`url("${video.image}")`:'';const sentences=captionSentences(video);$('#sentence-count').textContent=sentences.length;$('#transcript-content').innerHTML=sentences.map(s=>renderCaptionParagraph(video,s)).join('');WordAheadPlayback.lastIndex=-1;setWordSheet(false);$('#read-progress').style.width='0%';renderRecommendations(video);setView('reader');$('#reader-view').hidden=false;updateProgress()}
