@@ -105,7 +105,7 @@ button:disabled{cursor:default;opacity:.55}
 #offline-offer .settings-actions{gap:8px;flex-wrap:wrap}
 
 /* Fixed bottom sheet: controls stay aligned while only the definition scrolls. */
-.word-sheet{position:fixed;z-index:10;inset:auto 0 0;margin-inline:auto;width:min(620px,100%);height:calc(120px + env(safe-area-inset-bottom));min-height:0;max-height:50dvh;display:grid;grid-template-areas:"handle" "word" "phonetic" "meaning" "retry";grid-template-rows:18px 30px auto minmax(0,1fr) auto;gap:0;padding:4px 12px calc(6px + env(safe-area-inset-bottom));background:#29363b;color:#fff;border-radius:12px 12px 0 0;box-shadow:0 14px 50px #0717184d;overflow:hidden;transform:translateY(var(--sheet-drag,0px));animation:none;transition:none}
+.word-sheet{position:fixed;z-index:10;inset:auto 0 0;margin-inline:auto;width:min(620px,100%);height:calc(95px + env(safe-area-inset-bottom));min-height:0;max-height:50dvh;display:grid;grid-template-areas:"handle" "word" "phonetic" "meaning" "retry";grid-template-rows:18px 30px 15px minmax(0,1fr) auto;gap:0;padding:4px 12px calc(6px + env(safe-area-inset-bottom));background:#29363b;color:#fff;border-radius:12px 12px 0 0;box-shadow:0 14px 50px #0717184d;overflow:hidden;transform:translateY(var(--sheet-drag,0px));animation:none;transition:none}
 .word-sheet[hidden]{display:none}
 .word-sheet .sheet-grabber{grid-area:handle;margin:0 auto;height:18px;min-height:18px}
 .word-sheet .sheet-word-row{grid-area:word;min-width:0;align-items:center;padding:0;gap:6px;flex-wrap:nowrap}
@@ -113,4 +113,4 @@ button:disabled{cursor:default;opacity:.55}
 .word-sheet .part-of-speech{flex:0 1 auto;max-width:27%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
 .word-sheet .phonetic{grid-area:phonetic;margin:0;font-size:11px;line-height:15px}
 .word-sheet .meaning{grid-area:meaning;min-height:0;margin:2px 0 0;overflow-y:auto;overflow-x:hidden;max-height:none;font-size:14px;line-height:1.4;overflow-wrap:anywhere;overscroll-behavior:contain}
-.word-sheet .dictionary-retry{grid-area:retry;justify-self:start}
+.word-sheet .dictionary-retry{position:absolute;top:4px;right:12px;grid-area:auto;margin:0;padding:0;font-size:12px;line-height:18px}
