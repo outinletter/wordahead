@@ -20,3 +20,10 @@ const grouped=context.captionSentences({segments:fragments});assert.equal(groupe
 const unpunctuated=Array.from({length:20},(_,i)=>({start:i,text:'a short subtitle fragment'}));const blocks=context.captionSentences({segments:unpunctuated});assert(blocks.length<unpunctuated.length);assert(blocks.every(b=>b.text.length>=90));assert.equal(blocks.map(x=>x.text).join(' '),unpunctuated.map(x=>x.text).join(' '));
 const title=context.captionSentences({segments:[{start:0,text:'Dr.'},{start:1,text:'Smith is speaking.'}]});assert.equal(title.length,1);
 console.log('PASS: fragments group into sentences or larger blocks without text loss or invented timestamps');
+
+const turns=context.captionSentences({segments:[{start:0,text:'A short question',speaker:'host'},{start:2,text:'a short answer',speaker:'guest'}]});assert.equal(turns.length,2);assert.equal(turns[1].start,2);
+const markers=context.captionSentences({segments:[{start:0,text:'Question fragment'},{start:2,text:'>> Answer fragment'},{start:4,text:'continues'}]});assert.equal(markers.length,2);assert.equal(markers[1].start,2);assert(!markers[1].text.includes('>>'));
+const internal=context.captionTurnSegments([{start:10,duration:8,parts:[{start:10,text:'A question '},{start:13,text:'>> An answer'}]}]);assert.equal(internal.length,2);assert.equal(internal[1].start,13);assert(internal[1].turnStart);assert.equal(internal[1].end,18);
+const persisted=context.captionTurnSegments(internal);assert.equal(persisted[1].end,18);assert(persisted[1].turnStart);
+const long=context.captionSentences({segments:[{start:0,duration:60,speaker:'host',text:'a long speech '.repeat(100)}]},text=>text.length<=120);assert(long.length>1);assert(long.every(x=>x.text.length<=120));assert(long[1].start>0);assert(long[1].estimated);assert.equal(long.map(x=>x.text).join(' '),'a long speech '.repeat(100).trim());
+console.log('PASS: speaker boundaries, in-cue turn timestamps, persisted timing, six-line split without text loss');

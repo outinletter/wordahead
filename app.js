@@ -39,26 +39,73 @@ function navigateBack(){if(!$('#word-sheet').hidden){setWordSheet(false);return}
 history.replaceState({view:'home'},'','#home');window.addEventListener('popstate',e=>setView(e.state?.view||'home',false));
 function setView(name,record=true){if(name!=='reader'){saveReaderPosition();WordAheadVideo.hide();}else WordAheadVideo.show(activeVideo);if(record&&history.state?.view!==name)history.pushState({view:name},'',`#${name}`);document.body.classList.toggle('reading',name==='reader');document.body.classList.toggle('previewing',name==='preview');$('#reader-view').hidden=true;setWordSheet(false);$$('.view').forEach(v=>v.hidden=true);if(name==='preview'){$('#preview-dialog').hidden=false;window.scrollTo(0,0);return}$('#preview-dialog').hidden=true;if(name==='reader'){$('#reader-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.remove('active'));restoreReaderPosition();return}$(name==='library'?'#library-view':'#home-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));renderLibrary();window.scrollTo(0,0)}
 function cleanCaptionText(value){return String(value||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()}
-function captionSentences(video){
- const cues=(video.segments||[]).filter(x=>x.start!==null&&x.start!==undefined&&x.start!=='').map(x=>({text:cleanCaptionText(x.text),start:Number(x.start)})).filter(x=>x.text&&Number.isFinite(x.start)&&x.start>=0).sort((a,b)=>a.start-b.start);
- if(cues.length){
-  const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start)last.text+=' '+cue.text;else merged.push({...cue});}
-  const groups=[];let pending=null;
-  const sentenceEnd=text=>/[.!?]["'”’\])]*$/.test(text)&&!/(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$/i.test(text);
-  for(const cue of merged){if(!pending)pending={...cue};else pending.text+=' '+cue.text;if(sentenceEnd(pending.text)||pending.text.length>=90){groups.push(pending);pending=null;}}
-  if(pending){if(groups.length&&!sentenceEnd(pending.text))groups.at(-1).text+=' '+pending.text;else groups.push(pending);}
-  return groups;
+function captionTurnSegments(source){
+ const result=[];
+ for(const item of source||[]){
+  if(item.start===null||item.start===undefined||item.start==='')continue;
+  const base=Number(item.start);if(!Number.isFinite(base)||base<0)continue;
+  const parts=item.parts?.length?item.parts:[{text:item.rawText??item.text,start:base,speaker:item.speakerId??item.speaker,turnStart:item.turnStart}];
+  let pending=null,turn=!!item.turnStart;
+  const flush=()=>{if(pending){pending.text=cleanCaptionText(pending.text);if(pending.text)result.push(pending);pending=null;}};
+  for(const part of parts){
+   let raw=String(part.text||''),speaker=String(part.speakerId??part.speaker??item.speakerId??item.speaker??'');
+   const voice=raw.match(/^\s*<v(?:\.[^\s>]*)?\s+([^>]+)>/i);if(voice){speaker=voice[1].trim();raw=raw.replace(voice[0],'').replace(/<\/v>/gi,'');}
+   const time=Number(part.start),start=Number.isFinite(time)&&time>=0?time:base;
+   if(part.turnStart||pending&&speaker&&pending.speaker&&speaker!==pending.speaker){flush();turn=true;}
+   const chunks=raw.split('>>');
+   chunks.forEach((text,i)=>{if(i){flush();turn=true;}if(!text.trim())return;
+    if(!pending)pending={start,text:'',speaker,turnStart:turn,parts:[],end:Number.isFinite(item.end)&&item.end>base?item.end:Number.isFinite(Number(item.duration))&&Number(item.duration)>0?base+Number(item.duration):null};
+    pending.text+=text;pending.parts.push({text,start});turn=false;
+   });
+  }
+  flush();
  }
- const text=cleanCaptionText(video.text).replace(/\s+/g,' ');return Array.from(new Intl.Segmenter('en',{granularity:'sentence'}).segment(text),({segment})=>({text:cleanCaptionText(segment),start:null})).filter(x=>x.text);
+ return result.sort((a,b)=>a.start-b.start);
 }
-function openReader(video){if(video.youtubeId&&!video.text){WordAheadCaptions.open(video);return}if(!video.text){openCaptionDialog(video);return}saveReaderPosition();activeVideo=video;$('#reader-title').textContent=video.title;$('#reader-title').title=video.title;$('#side-title').textContent=video.title;$('#reader-thumbnail').style.backgroundImage=video.image?`url("${video.image}")`:'';const sentences=captionSentences(video);$('#sentence-count').textContent=sentences.length;$('#transcript-content').innerHTML=sentences.map(s=>renderCaptionParagraph(video,s)).join('');WordAheadPlayback.lastIndex=-1;setWordSheet(false);$('#read-progress').style.width='0%';renderRecommendations(video);setView('reader');$('#reader-view').hidden=false;updateProgress()}
+function captionBlockMeasure(video){
+ if(typeof document==='undefined')return{fits:text=>text.length<=210,dispose(){}};
+ const content=document.querySelector('#transcript-content');if(!content?.clientWidth)return{fits:text=>text.length<=210,dispose(){}};
+ const probe=document.createElement('div');probe.setAttribute('aria-hidden','true');probe.style.cssText=`position:absolute;visibility:hidden;pointer-events:none;margin:0;width:${content.clientWidth}px;left:0;top:0`;
+ content.append(probe);const lineHeight=parseFloat(getComputedStyle(content).lineHeight)||32;
+ return{fits(text,start){probe.innerHTML=renderCaptionParagraph(video,{text,start,estimated:true});const block=probe.firstElementChild;block.classList.add('audio-active');block.style.margin='0';const rows=[];for(const node of block.querySelectorAll('.word-token,.caption-play'))for(const rect of node.getClientRects()){const center=rect.top+rect.height/2;if(!rows.some(y=>Math.abs(y-center)<lineHeight/2))rows.push(center);}return rows.length?rows.length<=6:block.getBoundingClientRect().height<=lineHeight*6;},dispose(){probe.remove();}};
+}
+function captionSentences(video,withinLimit){
+ const cues=captionTurnSegments(video.segments);
+ if(!cues.length){const text=cleanCaptionText(video.text).replace(/\s+/g,' ');return Array.from(new Intl.Segmenter('en',{granularity:'sentence'}).segment(text),({segment})=>({text:cleanCaptionText(segment),start:null})).filter(x=>x.text);}
+ const measure=withinLimit?{fits:withinLimit,dispose(){}}:captionBlockMeasure(video),fits=(text,start)=>measure.fits(text,start);
+ const boundary=(previous,next)=>next.turnStart||previous.speaker&&next.speaker&&previous.speaker!==next.speaker;
+ const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start&&!boundary(last,cue)){last.text+=' '+cue.text;last.parts.push(...cue.parts);last.end=cue.end??last.end;}else merged.push({...cue});}
+ const groups=[];let pending=null;
+ const flush=()=>{if(pending)groups.push(pending);pending=null;};
+ const sentenceEnd=text=>/[.!?]["'”’\])]*$/.test(text)&&!/(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$/i.test(text);
+ try{
+  merged.forEach((cue,cueIndex)=>{
+   if(pending&&boundary(pending,cue))flush();
+   const words=cue.text.match(/\S+/g)||[],timings=cue.parts.flatMap(part=>(cleanCaptionText(part.text).match(/\S+/g)||[]).map((_,i)=>i===0?part.start:null));
+   const next=merged[cueIndex+1]?.start,ends=[cue.end,next].filter(x=>Number.isFinite(x)&&x>cue.start),end=ends.length?Math.min(...ends):null;let offset=0;
+   while(offset<words.length){
+    let count=1,high=words.length-offset;while(count<high){const mid=Math.ceil((count+high)/2);if(fits(words.slice(offset,offset+mid).join(' '),cue.start))count=mid;else high=mid-1;}
+    const candidate=timings.length===words.length?timings[offset]:null,exact=offset===0?cue.start:Number.isFinite(candidate)&&candidate>cue.start?candidate:null;
+    const estimated=exact===null&&Number.isFinite(end)&&end>cue.start;
+    const start=exact!==null?exact:estimated?cue.start+(end-cue.start)*offset/words.length:cue.start;
+    const piece={...cue,text:words.slice(offset,offset+count).join(' '),start,turnStart:offset===0&&cue.turnStart,estimated,sharedTimestamp:offset>0&&exact===null&&!estimated};
+    if(pending&&(!fits(pending.text+' '+piece.text,pending.start)||boundary(pending,piece)))flush();
+    if(!pending)pending={...piece};else pending.text+=' '+piece.text;
+    if(sentenceEnd(pending.text)||pending.text.length>=90)flush();offset+=count;
+   }
+  });
+  if(pending){const last=groups.at(-1);if(last&&!boundary(last,pending)&&!sentenceEnd(pending.text)&&fits(last.text+' '+pending.text,last.start))last.text+=' '+pending.text;else groups.push(pending);}
+  return groups.sort((a,b)=>a.start-b.start);
+ }finally{measure.dispose();}
+}
+function openReader(video){if(video.youtubeId&&!video.text){WordAheadCaptions.open(video);return}if(!video.text){openCaptionDialog(video);return}saveReaderPosition();activeVideo=video;$('#reader-title').textContent=video.title;$('#reader-title').title=video.title;$('#side-title').textContent=video.title;$('#reader-thumbnail').style.backgroundImage=video.image?`url("${video.image}")`:'';setView('reader');const sentences=captionSentences(video);$('#sentence-count').textContent=sentences.length;$('#transcript-content').innerHTML=sentences.map(s=>renderCaptionParagraph(video,s)).join('');WordAheadPlayback.lastIndex=-1;setWordSheet(false);$('#read-progress').style.width='0%';renderRecommendations(video);$('#reader-view').hidden=false;updateProgress()}
 function captionVideoUrl(video,start){
  if(!/^[A-Za-z0-9_-]{11}$/.test(video.youtubeId||'')||typeof start!=='number'||!Number.isFinite(start)||start<0)return null;
  return `https://www.youtube.com/watch?v=${video.youtubeId}&t=${Math.floor(start)}s`;
 }
 function renderCaptionParagraph(video,sentence){
  const url=captionVideoUrl(video,sentence.start);
- const play=url?`<button type="button" class="caption-play" aria-label="영상 ${formatTime(sentence.start)}부터 재생">▶ ${formatTime(sentence.start)}</button>`:sentence.start===null?'':`<span class="caption-time">${formatTime(sentence.start)}</span>`;
+ const play=url?`<button type="button" class="caption-play" title="${sentence.estimated?'자막 구간 내 추정 위치':sentence.sharedTimestamp?'원본 자막 시작 위치 · 단어별 시각 없음':escapeHtml(sentence.speaker||'영상 위치로 이동')}" aria-label="영상 ${formatTime(sentence.start)}부터 재생">▶ ${sentence.estimated?'≈ ':''}${formatTime(sentence.start)}</button>`:sentence.start===null?'':`<span class="caption-time">${formatTime(sentence.start)}</span>`;
  return `<p class="caption-paragraph"${url?` data-cue-start="${sentence.start}"`:''}>${play}${tokenize(sentence.text)}</p>`;
 }
 function formatTime(seconds){const whole=Math.max(0,Math.floor(seconds));return `${String(Math.floor(whole/60)).padStart(2,'0')}:${String(whole%60).padStart(2,'0')}`}
@@ -123,7 +170,8 @@ $('#video-form').addEventListener('submit',e=>{e.preventDefault();const url=$('#
 $('#paste-caption-button').onclick=()=>openCaptionDialog();$('#browse-playlist').onclick=()=>$('#playlist-dialog').showModal();$('#show-playlist-sample').onclick=loadPlaylistPreview;$('#playlist-form').onsubmit=e=>{e.preventDefault();loadPlaylistPreview()};
 $('#caption-form').addEventListener('submit',e=>{e.preventDefault();if(e.submitter?.value==='cancel'){$('#caption-dialog').close();return}addCaption($('#caption-title').value,$('#caption-text').value,$('#caption-dialog').dataset.videoId)});$('#load-sample').onclick=()=>{$('#caption-text').value=SAMPLE_CAPTIONS;notify('예시 자막을 불러왔어요.')};
 $('#back-home').onclick=navigateBack;$('#library-back').onclick=navigateBack;$('#sheet-grabber').onclick=e=>{if(e.currentTarget.dataset.dragged){delete e.currentTarget.dataset.dragged;return;}setWordSheet(false);};$('#sheet-retry').onclick=()=>{if(currentWord){WordAheadDictionary.retry(currentWord.raw,currentWord.key);$('#sheet-retry').hidden=true;$('#sheet-meaning').textContent='한글 뜻을 다시 조회하는 중…';WordAheadDictionary.show(currentWord.raw,currentWord.key);}};$('#speak-word').onclick=speak;$('#save-word').onclick=()=>saveCurrent($('#mark-known').checked?'known':'learning');$('#mark-known').onchange=()=>saveCurrent($('#mark-known').checked?'known':'learning');$('#make-list-button').onclick=()=>showPreview(activeVideo);
-function setReadingSize(size){size=Math.max(16,Math.min(32,Math.round(Number(size)||20)));fontScale=size/20;$('#transcript-content').style.fontSize=`${size}px`;$('#font-size').textContent=size;$('#font-down').disabled=size===16;$('#font-up').disabled=size===32;localStorage.setItem('wa-font-size',size)}
+function regroupReader(){if(!activeVideo?.text||$('#reader-view').hidden)return;const y=window.scrollY,groups=captionSentences(activeVideo);$('#sentence-count').textContent=groups.length;$('#transcript-content').innerHTML=groups.map(s=>renderCaptionParagraph(activeVideo,s)).join('');WordAheadPlayback.lastIndex=-1;if(WordAheadPlayback.lastVideo===activeVideo.youtubeId&&Number.isFinite(WordAheadPlayback.lastTime))WordAheadPlayback.update(WordAheadPlayback.lastTime,activeVideo.youtubeId);else window.scrollTo(0,y);}
+function setReadingSize(size){size=Math.max(16,Math.min(32,Math.round(Number(size)||20)));fontScale=size/20;$('#transcript-content').style.fontSize=`${size}px`;$('#font-size').textContent=size;$('#font-down').disabled=size===16;$('#font-up').disabled=size===32;localStorage.setItem('wa-font-size',size);regroupReader();}
 $('#word-filter').onchange=renderLibrary;$('#font-down').onclick=()=>setReadingSize(fontScale*20-1);$('#font-up').onclick=()=>setReadingSize(fontScale*20+1);$('#font-reset').onclick=()=>setReadingSize(20);window.addEventListener('scroll',updateProgress,{passive:true});setReadingSize(localStorage.getItem('wa-font-size'));
 $('#how-link').onclick=()=>location.href='support.html';$('#profile-button').onclick=()=>{$('#settings-dialog').showModal();refreshOfflineDictionary();WordAheadBilling.refresh();};
 const darkMode=$('#dark-mode');darkMode.checked=localStorage.getItem('wa-dark-mode')==='1';document.body.classList.toggle('dark-mode',darkMode.checked);darkMode.onchange=()=>{document.body.classList.toggle('dark-mode',darkMode.checked);localStorage.setItem('wa-dark-mode',darkMode.checked?'1':'0')};
@@ -186,3 +234,6 @@ function plainDictionaryMeaning(value){const document=new DOMParser().parseFromS
  const end=e=>{if(drag?.id!==e.pointerId)return;const close=drag.offset>=32;drag=null;sheet.style.removeProperty('--sheet-drag');if(close)setWordSheet(false);};
  handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',()=>{drag=null;sheet.style.removeProperty('--sheet-drag');});
 })();
+
+let captionWidth=window.innerWidth,captionResize;
+window.addEventListener('resize',()=>{if(window.innerWidth===captionWidth)return;captionWidth=window.innerWidth;clearTimeout(captionResize);captionResize=setTimeout(regroupReader,120);});

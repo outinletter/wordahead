@@ -21,7 +21,7 @@ export async function captions(videoId) {
   const raw = await (await youtube(url.href)).text();
   if (!raw.trim()) throw new Error('YouTube가 자막 본문을 제공하지 않았습니다.');
   const data = JSON.parse(raw);
-  const segments = (data.events || []).filter(e => e.segs).map(e => ({start:Number(e.tStartMs || 0)/1000,text:e.segs.map(s => s.utf8 || '').join('').replace(/\s+/g,' ').trim()})).filter(e => e.text);
+  const segments = (data.events || []).filter(e => e.segs).map(e => ({start:Number(e.tStartMs || 0)/1000,duration:Number(e.dDurationMs || 0)/1000,parts:e.segs.map(s=>({text:s.utf8||'',start:(Number(e.tStartMs||0)+Number(s.tOffsetMs||0))/1000})),text:e.segs.map(s => s.utf8 || '').join('').replace(/\s+/g,' ').trim()})).filter(e => e.text);
   if (!segments.length) throw new Error('영어 자막 본문이 비어 있습니다.');
   return {videoId,title:player.videoDetails?.title || 'YouTube 영어 자막',channel:player.videoDetails?.author || 'YouTube',language:track.languageCode,isGenerated:track.kind === 'asr',segments};
 }

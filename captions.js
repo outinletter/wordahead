@@ -9,8 +9,7 @@ const WordAheadCaptions = {
       if(!await WordAheadBilling.beforeAnalysis(video)){WordAheadBilling.showLimit(video);return;}
       const data=await this.fetch(video.youtubeId);
       if(activeVideo!==video||$('#reader-view').hidden)return;
-      const cleanSegment=x=>({...x,text:String(x.text||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()});
-      video.segments=data.segments.map(cleanSegment).filter(x=>x.text);video.text=video.segments.map(x=>x.text).join('\n');
+      video.segments=captionTurnSegments(data.segments);video.text=video.segments.map(x=>x.text).join('\n');
       video.title=data.title;video.channel=data.channel;video.caption=true;
       video.meta=data.isGenerated?'영어(자동) 자막':'영어 자막';
       persist();renderCards();openReader(video);

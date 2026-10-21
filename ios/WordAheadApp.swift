@@ -355,7 +355,9 @@ enum CaptionFetcher {
         let events=json["events"] as? [[String:Any]] ?? []
         let segments:[[String:Any]]=events.compactMap {event in
             let text=(event["segs"] as? [[String:Any]] ?? []).compactMap {$0["utf8"] as? String}.joined().replacingOccurrences(of:"\\s+",with:" ",options:.regularExpression).trimmingCharacters(in:.whitespacesAndNewlines)
-            return text.isEmpty ? nil : ["start":(event["tStartMs"] as? Double ?? 0)/1000,"text":text]
+            let start=(event["tStartMs"] as? Double ?? 0)/1000
+            let parts:[[String:Any]]=(event["segs"] as? [[String:Any]] ?? []).map {["text":$0["utf8"] as? String ?? "","start":start+($0["tOffsetMs"] as? Double ?? 0)/1000]}
+            return text.isEmpty ? nil : ["start":start,"text":text,"duration":(event["dDurationMs"] as? Double ?? 0)/1000,"parts":parts]
         }
         guard !segments.isEmpty else {throw CaptionFailure.unavailable("영어 자막 본문이 비어 있습니다.")}
         let details=player["videoDetails"] as? [String:Any] ?? [:]
