@@ -95,7 +95,7 @@ function captionSentences(video,withinLimit){
     if(pending&&(!fits(pending.text+' '+piece.text,pending.start)||boundary(pending,piece)))flush();
     if(!pending)pending={...piece};else pending.text+=' '+piece.text;
     if(sentenceEnd(pending.text))sentenceCount++;
-    if(sentenceCount>=3)flush();offset+=count;
+    if(sentenceCount>=2)flush();offset+=count;
    }
   });
   flush();
