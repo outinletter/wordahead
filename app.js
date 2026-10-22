@@ -70,20 +70,23 @@ function captionBlockMeasure(video){
  const content=document.querySelector('#transcript-content');if(!content?.clientWidth)return{fits:text=>text.length<=210,dispose(){}};
  const probe=document.createElement('div');probe.setAttribute('aria-hidden','true');probe.style.cssText=`position:absolute;visibility:hidden;pointer-events:none;margin:0;width:${content.clientWidth}px;left:0;top:0`;
  content.append(probe);const lineHeight=parseFloat(getComputedStyle(content).lineHeight)||32;
- return{fits(text,start){probe.innerHTML=renderCaptionParagraph(video,{text,start,estimated:true});const block=probe.firstElementChild;block.classList.add('audio-active');block.style.margin='0';const rows=[];for(const node of block.querySelectorAll('.word-token,.caption-play'))for(const rect of node.getClientRects()){const center=rect.top+rect.height/2;if(!rows.some(y=>Math.abs(y-center)<lineHeight/2))rows.push(center);}return rows.length?rows.length<=6:block.getBoundingClientRect().height<=lineHeight*6;},dispose(){probe.remove();}};
+ return{fits(text,start){probe.innerHTML=renderCaptionParagraph(video,{text,start,estimated:true});const block=probe.firstElementChild;block.classList.add('audio-active');block.style.margin='0';const rows=[];for(const node of block.querySelectorAll('.word-token,.caption-play'))for(const rect of node.getClientRects()){const center=rect.top+rect.height/2;if(!rows.some(y=>Math.abs(y-center)<lineHeight/2))rows.push(center);}return rows.length?rows.length<=5:block.getBoundingClientRect().height<=lineHeight*5;},dispose(){probe.remove();}};
 }
 function captionSentences(video,withinLimit){
  const cues=captionTurnSegments(video.segments);
  if(!cues.length){const text=cleanCaptionText(video.text).replace(/\s+/g,' ');return Array.from(new Intl.Segmenter('en',{granularity:'sentence'}).segment(text),({segment})=>({text:cleanCaptionText(segment),start:null})).filter(x=>x.text);}
- const measure={fits:withinLimit||(()=>true),dispose(){}},fits=(text,start)=>measure.fits(text,start);
+ const measure=withinLimit?{fits:withinLimit,dispose(){}}:captionBlockMeasure(video),fits=(text,start)=>measure.fits(text,start);
  const boundary=(previous,next)=>next.turnStart||previous.speaker&&next.speaker&&previous.speaker!==next.speaker;
  const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start&&!boundary(last,cue)){last.text+=' '+cue.text;last.parts.push(...cue.parts);last.end=cue.end??last.end;}else merged.push({...cue});}
- const groups=[];let pending=null,sentenceCount=0;
- const flush=()=>{if(pending)groups.push(pending);pending=null;sentenceCount=0;};
+ const groups=[];let pending=null,sentence=[];
+ const flush=()=>{if(pending)groups.push(pending);pending=null;};
+ const append=pieces=>{for(const piece of pieces){if(pending&&!fits(pending.text+' '+piece.text,pending.start))flush();if(!pending)pending={...piece};else pending.text+=' '+piece.text;}};
+ const finishSentence=()=>{if(!sentence.length)return;const text=sentence.map(p=>p.text).join(' ');if(pending&&!fits(pending.text+' '+text,pending.start))flush();append(sentence);sentence=[];};
  const sentenceEnd=text=>/[.!?]["'”’\])]*$/.test(text)&&!/(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$/i.test(text);
  try{
   merged.forEach((cue,cueIndex)=>{
-   if(pending&&boundary(pending,cue))flush();
+   const previous=sentence.at(-1)||pending;
+   if(previous&&boundary(previous,cue)){finishSentence();flush();}
    const words=cue.text.match(/\S+/g)||[],timings=cue.parts.flatMap(part=>(cleanCaptionText(part.text).match(/\S+/g)||[]).map((_,i)=>i===0?part.start:null));
    const next=merged[cueIndex+1]?.start,ends=[cue.end,next].filter(x=>Number.isFinite(x)&&x>cue.start),end=ends.length?Math.min(...ends):null;let offset=0;
    while(offset<words.length){
@@ -92,13 +95,11 @@ function captionSentences(video,withinLimit){
     const estimated=exact===null&&Number.isFinite(end)&&end>cue.start;
     const start=exact!==null?exact:estimated?cue.start+(end-cue.start)*offset/words.length:cue.start;
     const piece={...cue,text:words.slice(offset,offset+count).join(' '),start,turnStart:offset===0&&cue.turnStart,estimated,sharedTimestamp:offset>0&&exact===null&&!estimated};
-    if(pending&&(!fits(pending.text+' '+piece.text,pending.start)||boundary(pending,piece)))flush();
-    if(!pending)pending={...piece};else pending.text+=' '+piece.text;
-    if(sentenceEnd(pending.text))sentenceCount++;
-    if(sentenceCount>=2)flush();offset+=count;
+    sentence.push(piece);
+    if(sentenceEnd(sentence.map(p=>p.text).join(' ')))finishSentence();offset+=count;
    }
   });
-  flush();
+  finishSentence();flush();
   return groups.sort((a,b)=>a.start-b.start);
  }finally{measure.dispose();}
 }
