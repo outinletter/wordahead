@@ -89,7 +89,9 @@ final class ReaderController: UIViewController, WKScriptMessageHandler, WKNaviga
             web.leadingAnchor.constraint(equalTo:view.leadingAnchor),
             web.trailingAnchor.constraint(equalTo:view.trailingAnchor)
         ])
-        NotificationCenter.default.addObserver(self,selector:#selector(pauseYouTube),name:UIApplication.willResignActiveNotification,object:nil)
+        // Control Center temporarily deactivates the app without backgrounding it.
+        // Pause only after the app actually enters the background.
+        NotificationCenter.default.addObserver(self,selector:#selector(pauseYouTube),name:UIApplication.didEnterBackgroundNotification,object:nil)
         NotificationCenter.default.addObserver(self,selector:#selector(restoreYouTubeRate),name:UIApplication.didBecomeActiveNotification,object:nil)
         if let root = Bundle.main.url(forResource:"Web",withExtension:nil) {
             web.loadFileURL(root.appendingPathComponent("index.html"),allowingReadAccessTo:root)
