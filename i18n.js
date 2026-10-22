@@ -13,7 +13,7 @@
     '오프라인 사전':['Offline-Wörterbuch','オフライン辞書','离线词典','Diccionario sin conexión','Dictionnaire hors ligne','Dizionario offline','Dicionário offline','Офлайн-словарь','Offlinewoordenboek','พจนานุกรมออฟไลน์'],
     '사전 확인 중':['Wörterbuch wird geprüft','辞書を確認中','正在检查词典','Comprobando diccionario','Vérification du dictionnaire','Verifica dizionario','Verificando dicionário','Проверка словаря','Woordenboek controleren','กำลังตรวจสอบพจนานุกรม'],
     '확장 사전 다운로드 · Wi-Fi':['Erweitertes Wörterbuch laden · WLAN','拡張辞書をダウンロード · Wi-Fi','下载扩展词典 · Wi-Fi','Descargar diccionario ampliado · Wi-Fi','Télécharger le dictionnaire étendu · Wi-Fi','Scarica dizionario esteso · Wi-Fi','Baixar dicionário ampliado · Wi-Fi','Скачать расширенный словарь · Wi-Fi','Uitgebreid woordenboek downloaden · wifi','ดาวน์โหลดพจนานุกรมเพิ่มเติม · Wi-Fi'],
-    '기본 영한 약 1만 5천 어휘는 바로 사용 가능합니다. 확장 사전은 한 번 저장하면 앱 업데이트 후에도 유지되며, 변경된 파일만 다시 받습니다. 앱을 삭제하면 사전도 삭제됩니다.':['Etwa 15.000 englisch-deutsche Grundwörter sind sofort verfügbar. Das erweiterte Wörterbuch bleibt bei App-Updates erhalten; nur geänderte Dateien werden erneut geladen. Beim Löschen der App wird auch das Wörterbuch gelöscht.','基本の英和辞書約15,000語をすぐに使えます。拡張辞書はアプリ更新後も保持され、変更ファイルのみ再取得します。アプリを削除すると辞書も削除されます。','约15,000个基础英汉词条可立即使用。扩展词典在应用更新后保留，仅重新下载变更文件。删除应用也会删除词典。','Hay unas 15.000 palabras básicas inglés-coreano disponibles. El diccionario ampliado se conserva tras actualizar la app y solo vuelve a descargar archivos modificados. Al eliminar la app, también se elimina el diccionario.','Environ 15 000 mots anglais-coréen de base sont disponibles. Le dictionnaire étendu est conservé après les mises à jour et seuls les fichiers modifiés sont retéléchargés. Sa suppression entraîne celle du dictionnaire.','Sono subito disponibili circa 15.000 parole inglese-coreano. Il dizionario esteso resta dopo gli aggiornamenti e vengono riscaricati solo i file modificati. Eliminando l’app si elimina anche il dizionario.','Cerca de 15 mil palavras básicas inglês-coreano estão disponíveis. O dicionário ampliado permanece após atualizações e só baixa arquivos alterados. Ao apagar o app, o dicionário também é removido.','Сразу доступны около 15 000 базовых англо-корейских слов. Расширенный словарь сохраняется после обновлений; повторно загружаются только изменённые файлы. При удалении приложения словарь тоже удаляется.','Ongeveer 15.000 Engelse-Koreaanse basiswoorden zijn direct beschikbaar. Het uitgebreide woordenboek blijft na updates behouden; alleen gewijzigde bestanden worden opnieuw gedownload. Bij verwijderen van de app wordt ook het woordenboek verwijderd.','มีคำศัพท์อังกฤษ-เกาหลีพื้นฐานประมาณ 15,000 คำพร้อมใช้งาน พจนานุกรมเพิ่มเติมจะคงอยู่หลังอัปเดตแอปและดาวน์โหลดเฉพาะไฟล์ที่เปลี่ยน เมื่อลบแอป พจนานุกรมจะถูกลบด้วย'],
+    '기본 영한 약 1만 5천 어휘는 바로 사용 가능합니다. 확장 사전은 한 번 저장하면 앱 업데이트 후에도 유지되며, 변경된 파일만 다시 받습니다. 앱을 삭제하면 사전도 삭제됩니다.':['Etwa 15.000 englisch-koreanische Grundwörter sind sofort verfügbar. Das erweiterte Wörterbuch bleibt bei App-Updates erhalten; nur geänderte Dateien werden erneut geladen. Beim Löschen der App wird auch das Wörterbuch gelöscht.','基本の英韓辞書約15,000語をすぐに使えます。拡張辞書はアプリ更新後も保持され、変更ファイルのみ再取得します。アプリを削除すると辞書も削除されます。','约15,000个基础英韩词条可立即使用。扩展词典在应用更新后保留，仅重新下载变更文件。删除应用也会删除词典。','Hay unas 15.000 palabras básicas inglés-coreano disponibles. El diccionario ampliado se conserva tras actualizar la app y solo vuelve a descargar archivos modificados. Al eliminar la app, también se elimina el diccionario.','Environ 15 000 mots anglais-coréen de base sont disponibles. Le dictionnaire étendu est conservé après les mises à jour et seuls les fichiers modifiés sont retéléchargés. Sa suppression entraîne celle du dictionnaire.','Sono subito disponibili circa 15.000 parole inglese-coreano. Il dizionario esteso resta dopo gli aggiornamenti e vengono riscaricati solo i file modificati. Eliminando l’app si elimina anche il dizionario.','Cerca de 15 mil palavras básicas inglês-coreano estão disponíveis. O dicionário ampliado permanece após atualizações e só baixa arquivos alterados. Ao apagar o app, o dicionário também é removido.','Сразу доступны около 15 000 базовых англо-корейских слов. Расширенный словарь сохраняется после обновлений; повторно загружаются только изменённые файлы. При удалении приложения словарь тоже удаляется.','Ongeveer 15.000 Engelse-Koreaanse basiswoorden zijn direct beschikbaar. Het uitgebreide woordenboek blijft na updates behouden; alleen gewijzigde bestanden worden opnieuw gedownload. Bij verwijderen van de app wordt ook het woordenboek verwijderd.','มีคำศัพท์อังกฤษ-เกาหลีพื้นฐานประมาณ 15,000 คำพร้อมใช้งาน พจนานุกรมเพิ่มเติมจะคงอยู่หลังอัปเดตแอปและดาวน์โหลดเฉพาะไฟล์ที่เปลี่ยน เมื่อลบแอป พจนานุกรมจะถูกลบด้วย'],
     '다크 테마':['Dunkles Design','ダークテーマ','深色主题','Tema oscuro','Thème sombre','Tema scuro','Tema escuro','Тёмная тема','Donker thema','ธีมมืด'],
     '글자 크기는 1px 단위로 조절됩니다.':['Die Schriftgröße lässt sich in 1-px-Schritten einstellen.','文字サイズは1px単位で調整できます。','字体大小可按1px调整。','El tamaño se ajusta en incrementos de 1 px.','La taille se règle par incréments de 1 px.','La dimensione si regola a incrementi di 1 px.','O tamanho é ajustado em incrementos de 1 px.','Размер меняется с шагом 1 пиксель.','De tekstgrootte wordt per 1 px aangepast.','ปรับขนาดตัวอักษรได้ครั้งละ 1px'],
     '완료':['Fertig','完了','完成','Listo','Terminé','Fine','Concluído','Готово','Gereed','เสร็จสิ้น'],
@@ -71,11 +71,537 @@
     '연간 구독 시작':['Jahresabo starten','年間購読を開始','开始年度订阅','Iniciar suscripción anual','Démarrer l’abonnement annuel','Avvia abbonamento annuale','Iniciar assinatura anual','Оформить годовую подписку','Jaarabonnement starten','เริ่มสมาชิกแบบรายปี'],
     '닫기':['Schließen','閉じる','关闭','Cerrar','Fermer','Chiudi','Fechar','Закрыть','Sluiten','ปิด']
   };
+  Object.assign(rows,{
+  "나만의 어휘": [
+    "Mein Wortschatz",
+    "自分の語彙",
+    "个人词汇",
+    "Mi vocabulario",
+    "Mon vocabulaire",
+    "Il mio lessico",
+    "Meu vocabulário",
+    "Мой словарь",
+    "Mijn woordenschat",
+    "คำศัพท์ของฉัน"
+  ],
+  "한 편씩": [
+    "Ein Video nach dem anderen",
+    "一つずつ",
+    "每天一段",
+    "Un video a la vez",
+    "Une vidéo à la fois",
+    "Un video alla volta",
+    "Um vídeo por vez",
+    "По одному видео",
+    "Eén video tegelijk",
+    "ทีละวิดีโอ"
+  ],
+  "자막으로 배우는 영어": [
+    "Englisch mit Untertiteln",
+    "字幕で学ぶ英語",
+    "通过字幕学习英语",
+    "Inglés con subtítulos",
+    "L’anglais avec les sous-titres",
+    "Inglese con i sottotitoli",
+    "Inglês com legendas",
+    "Английский с субтитрами",
+    "Engels met ondertitels",
+    "เรียนอังกฤษผ่านคำบรรยาย"
+  ],
+  "예시 자막이나 직접 입력한 자막으로 시작할 수 있어요. YouTube 자동 수집은 영상·지역에 따라 제한될 수 있습니다.": [
+    "Starte mit Beispieluntertiteln oder eigenem Text. Der automatische YouTube-Abruf kann je nach Video und Region eingeschränkt sein.",
+    "サンプル字幕や入力した字幕で始められます。YouTubeの自動取得は動画や地域によって制限される場合があります。",
+    "可使用示例字幕或自行输入的字幕开始。YouTube自动获取可能因视频和地区受限。",
+    "Empieza con subtítulos de ejemplo o propios. La recopilación de YouTube puede variar por video y región.",
+    "Commencez avec un exemple ou vos propres sous-titres. L’import YouTube peut être limité selon la vidéo et la région.",
+    "Inizia con sottotitoli di esempio o propri. L’importazione YouTube può essere limitata per video e regione.",
+    "Comece com legendas de exemplo ou próprias. A coleta do YouTube pode ser limitada por vídeo e região.",
+    "Начните с примера или своего текста. Загрузка субтитров YouTube зависит от видео и региона.",
+    "Begin met een voorbeeld of eigen ondertitels. YouTube-import kan per video en regio beperkt zijn.",
+    "เริ่มด้วยคำบรรยายตัวอย่างหรือข้อความของคุณ การนำเข้าจาก YouTube อาจจำกัดตามวิดีโอและภูมิภาค"
+  ],
+  "붙여넣은 자막으로도 바로 시작할 수 있어요.": [
+    "Du kannst auch mit eingefügten Untertiteln starten.",
+    "貼り付けた字幕でもすぐに始められます。",
+    "也可粘贴字幕立即开始。",
+    "También puedes empezar pegando subtítulos.",
+    "Vous pouvez aussi commencer en collant des sous-titres.",
+    "Puoi iniziare anche incollando i sottotitoli.",
+    "Você também pode começar colando legendas.",
+    "Можно начать, вставив субтитры.",
+    "Je kunt ook beginnen met geplakte ondertitels.",
+    "เริ่มได้ทันทีด้วยคำบรรยายที่วาง"
+  ],
+  "재생목록 불러오기": [
+    "Playlist laden",
+    "再生リストを読み込む",
+    "导入播放列表",
+    "Importar playlist",
+    "Importer une playlist",
+    "Importa playlist",
+    "Importar playlist",
+    "Загрузить плейлист",
+    "Afspeellijst laden",
+    "นำเข้าเพลย์ลิสต์"
+  ],
+  "연습용 예시 자막": [
+    "Beispieluntertitel",
+    "練習用の字幕",
+    "练习示例字幕",
+    "Subtítulos de práctica",
+    "Sous-titres d’exemple",
+    "Sottotitoli di esempio",
+    "Legendas de exemplo",
+    "Пример субтитров",
+    "Voorbeeldondertitels",
+    "คำบรรยายตัวอย่าง"
+  ],
+  "단어장 미리보기": [
+    "Wortliste ansehen",
+    "単語帳を確認",
+    "预览单词本",
+    "Vista previa de vocabulario",
+    "Aperçu du vocabulaire",
+    "Anteprima vocabolario",
+    "Prévia do vocabulário",
+    "Просмотр словаря",
+    "Woordenlijst bekijken",
+    "ดูตัวอย่างคำศัพท์"
+  ],
+  "당신이 모를 단어를": [
+    "Unbekannte Wörter",
+    "知らない単語を",
+    "提前了解",
+    "Palabras nuevas",
+    "Les mots inconnus",
+    "Le parole nuove",
+    "Palavras novas",
+    "Незнакомые слова",
+    "Onbekende woorden",
+    "คำศัพท์ที่ยังไม่รู้"
+  ],
+  "영상 전에 먼저 준비해요.": [
+    "Vor dem Video kennenlernen.",
+    "動画の前に確認しましょう。",
+    "视频中的生词。",
+    "Prepáralas antes del video.",
+    "Découvrez-les avant la vidéo.",
+    "Scoprile prima del video.",
+    "Conheça antes do vídeo.",
+    "Изучите до просмотра.",
+    "Leer ze vóór de video.",
+    "เตรียมตัวก่อนดูวิดีโอ"
+  ],
+  "단어를 찾아보고 익힐수록, 다음 영상의 단어장이 더 나에게 맞아져요.": [
+    "Mit jedem nachgeschlagenen Wort passen die Vorschläge besser zu dir.",
+    "単語を調べて覚えるほど、次の動画の単語リストが自分に合うようになります。",
+    "查询和学习越多单词，推荐词汇就越适合你。",
+    "Al consultar y aprender palabras, las sugerencias se adaptan a ti.",
+    "Plus vous apprenez de mots, plus les suggestions vous correspondent.",
+    "Più parole impari, più i suggerimenti si adattano a te.",
+    "Quanto mais palavras aprende, mais as sugestões se adaptam a você.",
+    "Чем больше слов вы изучаете, тем точнее рекомендации.",
+    "Hoe meer woorden je leert, hoe beter de suggesties passen.",
+    "ยิ่งเรียนรู้คำศัพท์มาก รายการแนะนำก็ยิ่งเหมาะกับคุณ"
+  ],
+  "나만의 단어장 알아보기": [
+    "Meinen Wortschatz entdecken",
+    "自分の単語帳について",
+    "了解个人单词本",
+    "Descubre tu vocabulario",
+    "Découvrir mon vocabulaire",
+    "Scopri il tuo vocabolario",
+    "Conheça seu vocabulário",
+    "О моём словаре",
+    "Ontdek je woordenschat",
+    "รู้จักสมุดคำศัพท์ของคุณ"
+  ],
+  "체크 어휘 백업 저장": [
+    "Bekannte Wörter sichern",
+    "チェックした単語をバックアップ",
+    "备份已标记词汇",
+    "Respaldar palabras marcadas",
+    "Sauvegarder les mots cochés",
+    "Salva parole selezionate",
+    "Salvar palavras marcadas",
+    "Сохранить отмеченные слова",
+    "Gemarkeerde woorden opslaan",
+    "สำรองคำที่ทำเครื่องหมาย"
+  ],
+  "체크 어휘 불러오기": [
+    "Bekannte Wörter importieren",
+    "チェックした単語を読み込む",
+    "导入已标记词汇",
+    "Importar palabras marcadas",
+    "Importer les mots cochés",
+    "Importa parole selezionate",
+    "Importar palavras marcadas",
+    "Импорт отмеченных слов",
+    "Gemarkeerde woorden importeren",
+    "นำเข้าคำที่ทำเครื่องหมาย"
+  ],
+  "초기화 전 파일 앱에 백업하세요. 다시 불러오면 추천에서 제외됩니다. 직접 단어장에 저장하는 것은 가능합니다.": [
+    "Vor dem Zurücksetzen in Dateien sichern. Importierte Wörter werden nicht empfohlen, können aber manuell gespeichert werden.",
+    "初期化前にファイルアプリへバックアップしてください。読み込んだ単語は推薦から除外されますが、手動保存は可能です。",
+    "重置前请备份到文件应用。导入的词汇将从推荐中排除，但仍可手动保存。",
+    "Respalda en Archivos antes de restablecer. Las palabras importadas se excluyen de sugerencias, pero puedes guardarlas manualmente.",
+    "Sauvegardez dans Fichiers avant de réinitialiser. Les mots importés sont exclus des suggestions, mais restent enregistrables manuellement.",
+    "Esegui il backup in File prima del ripristino. Le parole importate sono escluse dai suggerimenti, ma puoi salvarle manualmente.",
+    "Faça backup em Arquivos antes de redefinir. Palavras importadas ficam fora das sugestões, mas podem ser salvas manualmente.",
+    "Перед сбросом сохраните копию в Файлы. Импортированные слова исключаются из рекомендаций, но их можно сохранить вручную.",
+    "Maak vóór reset een kopie in Bestanden. Geïmporteerde woorden worden niet aanbevolen, maar kunnen handmatig worden opgeslagen.",
+    "สำรองในแอปไฟล์ก่อนรีเซ็ต คำที่นำเข้าจะไม่อยู่ในรายการแนะนำ แต่ยังบันทึกเองได้"
+  ],
+  "영상에서 발견한 단어를 모아 복습해요.": [
+    "Wörter aus Videos sammeln und wiederholen.",
+    "動画で見つけた単語を集めて復習しましょう。",
+    "收集并复习视频中的单词。",
+    "Reúne y repasa palabras de videos.",
+    "Rassemblez et révisez les mots des vidéos.",
+    "Raccogli e ripassa parole dai video.",
+    "Reúna e revise palavras dos vídeos.",
+    "Собирайте и повторяйте слова из видео.",
+    "Verzamel en herhaal woorden uit video’s.",
+    "รวบรวมและทบทวนคำศัพท์จากวิดีโอ"
+  ],
+  "단어를 선택하면 뜻과 문맥을 다시 볼 수 있어요.": [
+    "Wähle ein Wort für Bedeutung und Kontext.",
+    "単語を選ぶと意味と文脈を確認できます。",
+    "选择单词可查看释义和语境。",
+    "Selecciona una palabra para ver su significado y contexto.",
+    "Sélectionnez un mot pour revoir son sens et son contexte.",
+    "Seleziona una parola per rivedere significato e contesto.",
+    "Selecione uma palavra para ver o significado e contexto.",
+    "Выберите слово, чтобы увидеть значение и контекст.",
+    "Selecteer een woord voor betekenis en context.",
+    "เลือกคำเพื่อดูความหมายและบริบท"
+  ],
+  "영상 자막": [
+    "Video-Untertitel",
+    "動画の字幕",
+    "视频字幕",
+    "Subtítulos del video",
+    "Sous-titres de la vidéo",
+    "Sottotitoli del video",
+    "Legendas do vídeo",
+    "Субтитры видео",
+    "Video-ondertitels",
+    "คำบรรยายวิดีโอ"
+  ],
+  "영상 제목": [
+    "Videotitel",
+    "動画タイトル",
+    "视频标题",
+    "Título del video",
+    "Titre de la vidéo",
+    "Titolo del video",
+    "Título do vídeo",
+    "Название видео",
+    "Videotitel",
+    "ชื่อวิดีโอ"
+  ],
+  "영어 자막 · 전체 스크립트": [
+    "Englische Untertitel · Volltext",
+    "英語字幕・全文",
+    "英语字幕·完整文本",
+    "Subtítulos en inglés · texto completo",
+    "Sous-titres anglais · texte intégral",
+    "Sottotitoli inglesi · testo completo",
+    "Legendas em inglês · texto completo",
+    "Английские субтитры · весь текст",
+    "Engelse ondertitels · volledige tekst",
+    "คำบรรยายอังกฤษ · ข้อความทั้งหมด"
+  ],
+  "자막 문장": [
+    "Untertitelsätze",
+    "字幕の文",
+    "字幕句子",
+    "Oraciones de subtítulos",
+    "Phrases des sous-titres",
+    "Frasi dei sottotitoli",
+    "Frases das legendas",
+    "Предложения субтитров",
+    "Ondertitelzinnen",
+    "ประโยคคำบรรยาย"
+  ],
+  "새로운 단어": [
+    "Neue Wörter",
+    "新しい単語",
+    "新单词",
+    "Palabras nuevas",
+    "Nouveaux mots",
+    "Nuove parole",
+    "Palavras novas",
+    "Новые слова",
+    "Nieuwe woorden",
+    "คำศัพท์ใหม่"
+  ],
+  "단어를 클릭해 뜻과 발음을 확인해보세요.": [
+    "Wort für Bedeutung und Aussprache antippen.",
+    "単語をタップして意味と発音を確認してください。",
+    "点击单词查看释义并收听发音。",
+    "Toca una palabra para ver su significado y pronunciación.",
+    "Touchez un mot pour voir son sens et sa prononciation.",
+    "Tocca una parola per significato e pronuncia.",
+    "Toque numa palavra para ver o significado e a pronúncia.",
+    "Нажмите слово, чтобы увидеть значение и произношение.",
+    "Tik op een woord voor betekenis en uitspraak.",
+    "แตะคำเพื่อดูความหมายและฟังการออกเสียง"
+  ],
+  "뜻이 여기에 표시됩니다.": [
+    "Die Bedeutung erscheint hier.",
+    "意味はここに表示されます。",
+    "释义将显示在这里。",
+    "El significado aparecerá aquí.",
+    "La définition s’affichera ici.",
+    "Il significato apparirà qui.",
+    "O significado aparecerá aqui.",
+    "Значение появится здесь.",
+    "De betekenis verschijnt hier.",
+    "ความหมายจะแสดงที่นี่"
+  ],
+  "영상을 삭제할까요?": [
+    "Video löschen?",
+    "動画を削除しますか？",
+    "要删除视频吗？",
+    "¿Eliminar el video?",
+    "Supprimer la vidéo ?",
+    "Eliminare il video?",
+    "Excluir o vídeo?",
+    "Удалить видео?",
+    "Video verwijderen?",
+    "ลบวิดีโอหรือไม่"
+  ],
+  "목록의 영상과 자막을 삭제합니다. 저장한 단어는 유지됩니다.": [
+    "Video und Untertitel werden entfernt. Gespeicherte Wörter bleiben erhalten.",
+    "動画と字幕を削除します。保存した単語は残ります。",
+    "删除视频和字幕，保留已保存的单词。",
+    "Se eliminarán video y subtítulos. Las palabras guardadas se conservan.",
+    "La vidéo et les sous-titres seront supprimés. Les mots enregistrés sont conservés.",
+    "Video e sottotitoli saranno eliminati. Le parole salvate restano.",
+    "O vídeo e legendas serão excluídos. As palavras salvas permanecem.",
+    "Видео и субтитры будут удалены. Сохранённые слова останутся.",
+    "Video en ondertitels worden verwijderd. Opgeslagen woorden blijven behouden.",
+    "ลบวิดีโอและคำบรรยาย โดยเก็บคำศัพท์ที่บันทึกไว้"
+  ],
+  "이 기기의 학습 데이터 삭제": [
+    "Lerndaten dieses Geräts löschen",
+    "この端末の学習データを削除",
+    "删除此设备的学习数据",
+    "Eliminar datos de aprendizaje del dispositivo",
+    "Supprimer les données d’apprentissage de cet appareil",
+    "Elimina dati di apprendimento del dispositivo",
+    "Excluir dados de aprendizado deste dispositivo",
+    "Удалить учебные данные устройства",
+    "Leergegevens op dit apparaat wissen",
+    "ลบข้อมูลการเรียนบนอุปกรณ์นี้"
+  ],
+  "전체 학습 데이터 삭제": [
+    "Alle Lerndaten löschen",
+    "すべての学習データを削除",
+    "删除全部学习数据",
+    "Eliminar todos los datos de aprendizaje",
+    "Supprimer toutes les données d’apprentissage",
+    "Elimina tutti i dati di apprendimento",
+    "Excluir todos os dados de aprendizado",
+    "Удалить все учебные данные",
+    "Alle leergegevens wissen",
+    "ลบข้อมูลการเรียนทั้งหมด"
+  ],
+  "자막으로 배우는 나만의 영어": [
+    "Mein Englisch mit Untertiteln",
+    "字幕で学ぶ自分の英語",
+    "通过字幕学习自己的英语",
+    "Mi inglés con subtítulos",
+    "Mon anglais avec les sous-titres",
+    "Il mio inglese con i sottotitoli",
+    "Meu inglês com legendas",
+    "Мой английский с субтитрами",
+    "Mijn Engels met ondertitels",
+    "เรียนอังกฤษในแบบคุณผ่านคำบรรยาย"
+  ],
+  "도움말": [
+    "Hilfe",
+    "ヘルプ",
+    "帮助",
+    "Ayuda",
+    "Aide",
+    "Aiuto",
+    "Ajuda",
+    "Помощь",
+    "Help",
+    "ความช่วยเหลือ"
+  ],
+  "개인정보": [
+    "Datenschutz",
+    "プライバシー",
+    "隐私",
+    "Privacidad",
+    "Confidentialité",
+    "Privacy",
+    "Privacidade",
+    "Конфиденциальность",
+    "Privacy",
+    "ความเป็นส่วนตัว"
+  ],
+  "학습 데이터 삭제": [
+    "Lerndaten löschen",
+    "学習データを削除",
+    "删除学习数据",
+    "Eliminar datos de aprendizaje",
+    "Supprimer les données d’apprentissage",
+    "Elimina dati di apprendimento",
+    "Excluir dados de aprendizado",
+    "Удалить учебные данные",
+    "Leergegevens wissen",
+    "ลบข้อมูลการเรียน"
+  ],
+  "확장 사전 다운로드는 iPhone 앱에서 지원합니다.": [
+    "Der Wörterbuchdownload ist in der iPhone-App verfügbar.",
+    "拡張辞書はiPhoneアプリでダウンロードできます。",
+    "扩展词典可在iPhone应用中下载。",
+    "La descarga del diccionario está disponible en la app de iPhone.",
+    "Le téléchargement du dictionnaire est disponible dans l’app iPhone.",
+    "Il dizionario si scarica dall’app iPhone.",
+    "O dicionário pode ser baixado no app para iPhone.",
+    "Словарь можно загрузить в приложении для iPhone.",
+    "Het woordenboek kan in de iPhone-app worden gedownload.",
+    "ดาวน์โหลดพจนานุกรมได้ในแอป iPhone"
+  ],
+  "연간 29,000원 예정": [
+    "Voraussichtlich ₩29.000/Jahr",
+    "年間₩29,000予定",
+    "预计每年₩29,000",
+    "Previsto: ₩29,000 al año",
+    "Prévu : ₩29 000/an",
+    "Previsto: ₩29.000/anno",
+    "Previsto: ₩29.000/ano",
+    "Ожидается ₩29 000 в год",
+    "Verwacht: ₩29.000/jaar",
+    "คาดว่า ₩29,000 ต่อปี"
+  ],
+  "Wi-Fi에서 확장 영한 사전을 저장하면 인터넷 없이 더 많은 단어 뜻을 볼 수 있어요. 앱 업데이트 후에도 유지됩니다.": [
+    "Lade das erweiterte Englisch-Koreanisch-Wörterbuch per WLAN für mehr Offline-Bedeutungen. Es bleibt nach Updates erhalten.",
+    "Wi-Fiで拡張英韓辞書を保存すると、オフラインでより多くの意味を確認できます。アプリ更新後も保持されます。",
+    "通过Wi-Fi保存扩展英韩词典后，可离线查询更多词义，更新应用后仍会保留。",
+    "Guarda el diccionario inglés-coreano por Wi-Fi para consultar más palabras sin conexión. Se conserva al actualizar.",
+    "Enregistrez le dictionnaire anglais-coréen en Wi-Fi pour consulter plus de mots hors ligne. Il est conservé après les mises à jour.",
+    "Salva il dizionario inglese-coreano via Wi-Fi per più significati offline. Resta dopo gli aggiornamenti.",
+    "Salve o dicionário inglês-coreano por Wi-Fi para mais significados offline. Permanece após atualizações.",
+    "Загрузите англо-корейский словарь по Wi-Fi для работы офлайн. Он сохраняется при обновлениях.",
+    "Sla het Engels-Koreaanse woordenboek via wifi op voor meer offlinebetekenissen. Het blijft na updates behouden.",
+    "บันทึกพจนานุกรมอังกฤษ-เกาหลีผ่าน Wi-Fi เพื่อดูความหมายเพิ่มเติมแบบออฟไลน์ และเก็บไว้หลังอัปเดต"
+  ],
+  "자막으로 먼저 시작해요": [
+    "Mit Untertiteln starten",
+    "字幕から始めましょう",
+    "先从字幕开始",
+    "Empieza con subtítulos",
+    "Commencez avec les sous-titres",
+    "Inizia con i sottotitoli",
+    "Comece com legendas",
+    "Начните с субтитров",
+    "Begin met ondertitels",
+    "เริ่มจากคำบรรยาย"
+  ],
+  "YouTube에서 자막을 제공하지 않거나 접근이 제한된 경우 직접 작성했거나 사용할 권한이 있는 영어 자막으로 학습할 수 있습니다.": [
+    "Wenn YouTube-Untertitel fehlen, nutze eigene oder zur Nutzung freigegebene englische Texte.",
+    "YouTubeの字幕がない場合や取得が制限される場合は、自作または利用許可のある英語字幕を使用できます。",
+    "若YouTube未提供字幕或访问受限，可使用自写或有权使用的英语字幕学习。",
+    "Si YouTube no ofrece subtítulos, usa textos propios o con permiso de uso.",
+    "Si les sous-titres YouTube sont indisponibles, utilisez un texte personnel ou autorisé.",
+    "Se i sottotitoli YouTube non sono disponibili, usa testi propri o autorizzati.",
+    "Se as legendas do YouTube estiverem indisponíveis, use textos próprios ou autorizados.",
+    "Если субтитры YouTube недоступны, используйте свой текст или текст с разрешением на использование.",
+    "Als YouTube-ondertitels ontbreken, gebruik dan eigen of toegestane Engelse teksten.",
+    "หากไม่มีคำบรรยาย YouTube หรือเข้าถึงไม่ได้ ให้ใช้ข้อความอังกฤษที่คุณเขียนเองหรือมีสิทธิ์ใช้งาน"
+  ],
+  "자막 데이터는 이 기기에 저장됩니다.": [
+    "Untertitel werden auf diesem Gerät gespeichert.",
+    "字幕データはこの端末に保存されます。",
+    "字幕数据保存在此设备上。",
+    "Los subtítulos se guardan en este dispositivo.",
+    "Les sous-titres sont enregistrés sur cet appareil.",
+    "I sottotitoli sono salvati su questo dispositivo.",
+    "As legendas são salvas neste dispositivo.",
+    "Субтитры хранятся на этом устройстве.",
+    "Ondertitels worden op dit apparaat opgeslagen.",
+    "คำบรรยายถูกบันทึกบนอุปกรณ์นี้"
+  ],
+  "목록 미리보기": [
+    "Liste ansehen",
+    "リストを確認",
+    "预览列表",
+    "Vista previa de la lista",
+    "Aperçu de la liste",
+    "Anteprima elenco",
+    "Prévia da lista",
+    "Просмотр списка",
+    "Lijst bekijken",
+    "ดูตัวอย่างรายการ"
+  ],
+  "글자 작게": [
+    "Text verkleinern",
+    "文字を小さく",
+    "缩小文字",
+    "Reducir texto",
+    "Réduire le texte",
+    "Riduci testo",
+    "Diminuir texto",
+    "Уменьшить текст",
+    "Tekst verkleinen",
+    "ลดขนาดตัวอักษร"
+  ],
+  "글자 크게": [
+    "Text vergrößern",
+    "文字を大きく",
+    "放大文字",
+    "Ampliar texto",
+    "Agrandir le texte",
+    "Ingrandisci testo",
+    "Aumentar texto",
+    "Увеличить текст",
+    "Tekst vergroten",
+    "เพิ่มขนาดตัวอักษร"
+  ],
+  "글자 크기 기본값으로": [
+    "Textgröße zurücksetzen",
+    "文字サイズを初期値に",
+    "重置字体大小",
+    "Restablecer tamaño",
+    "Réinitialiser la taille",
+    "Ripristina dimensione",
+    "Redefinir tamanho",
+    "Сбросить размер текста",
+    "Tekstgrootte herstellen",
+    "รีเซ็ตขนาดตัวอักษร"
+  ]
+});
   const reverse=new Map();
   for(const [ko,values] of Object.entries(rows)) values.forEach((v,i)=>{const m=reverse.get(v)||{};m[langs[i]]=ko;reverse.set(v,m)});
   const raw=value=>{const source=reverse.get(value);return source?Object.values(source)[0]:value};
-  function translate(value,code){const source=raw(value);const i=langs.indexOf(code);if(i<0)return source;const row=rows[source];if(row)return row[i]||source;let m=source.match(/^기본 영한 사전 사용 중 · 확장 사전 (\d+)\/(\d+)개 저장됨 \(전체 약 (\d+)MB\)$/);if(m){const [a,b,c]=m.slice(1);return [`Englisch-Koreanisches Grundwörterbuch · Erweitert ${a}/${b} gespeichert (ca. ${c} MB)`,`基本英韓辞書を使用中 · 拡張辞書 ${a}/${b} 件保存済み（約 ${c} MB）`,`正在使用基础英韩词典 · 已保存扩展词典 ${a}/${b}（约 ${c} MB）`,`Diccionario inglés-coreano básico · ampliado ${a}/${b} guardados (aprox. ${c} MB)`,`Dictionnaire anglais-coréen de base · extension ${a}/${b} enregistrés (env. ${c} Mo)`,`Dizionario inglese-coreano di base · esteso ${a}/${b} salvati (circa ${c} MB)`,`Dicionário inglês-coreano básico · ampliado ${a}/${b} salvos (cerca de ${c} MB)`,`Базовый англо-корейский словарь · расширенный ${a}/${b} сохранено (около ${c} МБ)`,`Engels-Koreaans basiswoordenboek · uitgebreid ${a}/${b} opgeslagen (ca. ${c} MB)`,`พจนานุกรมอังกฤษ-เกาหลีพื้นฐาน · บันทึกเพิ่มเติม ${a}/${b} (ประมาณ ${c} MB)`][i]}m=source.match(/^오늘 무료 분석 (\d+)개 남음 · 기존 자료 복습은 계속 무료$/);if(m)return [`Heute noch ${m[1]} kostenlose Analysen · vorhandenes Material bleibt kostenlos`,`本日あと${m[1]}回無料で分析可能 · 既存教材は引き続き無料`,`今天还可免费分析${m[1]}次 · 现有资料仍可免费复习`,`Quedan ${m[1]} análisis gratis hoy · el material existente sigue gratis`,`Encore ${m[1]} analyses gratuites aujourd’hui · les contenus existants restent gratuits`,`Restano ${m[1]} analisi gratuite oggi · i materiali esistenti restano gratuiti`,`Restam ${m[1]} análises grátis hoje · materiais existentes continuam grátis`,`Сегодня осталось бесплатных анализов: ${m[1]} · материалы доступны бесплатно`,`Vandaag nog ${m[1]} gratis analyses · bestaand materiaal blijft gratis`,`วันนี้เหลือวิเคราะห์ฟรี ${m[1]} ครั้ง · สื่อเดิมยังใช้ฟรี`][i];return source}
-  function apply(code){document.documentElement.lang=code;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const n of nodes){const v=n.nodeValue,trim=v.trim();if(!trim)continue;const out=translate(trim,code);if(out!==trim)n.nodeValue=v.replace(trim,out)}for(const el of document.querySelectorAll('[placeholder],[title],[aria-label]'))for(const attr of ['placeholder','title','aria-label'])if(el.hasAttribute(attr)){const v=el.getAttribute(attr),out=translate(v,code);if(out!==v)el.setAttribute(attr,out)}if(code!=='ko')document.title=translate('WordAhead — 자막으로 배우는 영어',code)}
+  function translate(value,code){const source=raw(value);const i=langs.indexOf(code);if(i<0)return source;const row=rows[source];if(row)return row[i]||source;const decorated=source.match(/^(.*?)(\s*[→×])$/);if(decorated&&rows[decorated[1]])return rows[decorated[1]][i]+decorated[2];let m=source.match(/^기본 영한 사전 사용 중 · 확장 사전 (\d+)\/(\d+)개 저장됨 \(전체 약 (\d+)MB\)$/);if(m){const [a,b,c]=m.slice(1);return [`Englisch-Koreanisches Grundwörterbuch · Erweitert ${a}/${b} gespeichert (ca. ${c} MB)`,`基本英韓辞書を使用中 · 拡張辞書 ${a}/${b} 件保存済み（約 ${c} MB）`,`正在使用基础英韩词典 · 已保存扩展词典 ${a}/${b}（约 ${c} MB）`,`Diccionario inglés-coreano básico · ampliado ${a}/${b} guardados (aprox. ${c} MB)`,`Dictionnaire anglais-coréen de base · extension ${a}/${b} enregistrés (env. ${c} Mo)`,`Dizionario inglese-coreano di base · esteso ${a}/${b} salvati (circa ${c} MB)`,`Dicionário inglês-coreano básico · ampliado ${a}/${b} salvos (cerca de ${c} MB)`,`Базовый англо-корейский словарь · расширенный ${a}/${b} сохранено (около ${c} МБ)`,`Engels-Koreaans basiswoordenboek · uitgebreid ${a}/${b} opgeslagen (ca. ${c} MB)`,`พจนานุกรมอังกฤษ-เกาหลีพื้นฐาน · บันทึกเพิ่มเติม ${a}/${b} (ประมาณ ${c} MB)`][i]}m=source.match(/^오늘 무료 분석 (\d+)개 남음 · 기존 자료 복습은 계속 무료$/);if(m)return [`Heute noch ${m[1]} kostenlose Analysen · vorhandenes Material bleibt kostenlos`,`本日あと${m[1]}回無料で分析可能 · 既存教材は引き続き無料`,`今天还可免费分析${m[1]}次 · 现有资料仍可免费复习`,`Quedan ${m[1]} análisis gratis hoy · el material existente sigue gratis`,`Encore ${m[1]} analyses gratuites aujourd’hui · les contenus existants restent gratuits`,`Restano ${m[1]} analisi gratuite oggi · i materiali esistenti restano gratuiti`,`Restam ${m[1]} análises grátis hoje · materiais existentes continuam grátis`,`Сегодня осталось бесплатных анализов: ${m[1]} · материалы доступны бесплатно`,`Vandaag nog ${m[1]} gratis analyses · bestaand materiaal blijft gratis`,`วันนี้เหลือวิเคราะห์ฟรี ${m[1]} ครั้ง · สื่อเดิมยังใช้ฟรี`][i];return source}
+  // Keep each node's original UI text; translated labels can share the same spelling.
+  const textSources=new WeakMap(),attributeSources=new WeakMap();
+  function apply(code){
+    document.documentElement.lang=code;
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    for(const n of nodes){
+      const value=n.nodeValue,trim=value.trim();if(!trim)continue;
+      const prior=textSources.get(n),source=prior&&prior.last===trim?prior.source:(rows[trim]?trim:raw(trim));
+      const out=translate(source,code);textSources.set(n,{source,last:out});
+      if(out!==trim)n.nodeValue=value.replace(trim,out);
+    }
+    for(const el of document.querySelectorAll('[placeholder],[title],[aria-label]')){
+      const records=attributeSources.get(el)||{};
+      for(const attr of ['placeholder','title','aria-label'])if(el.hasAttribute(attr)){
+        const value=el.getAttribute(attr),prior=records[attr],source=prior&&prior.last===value?prior.source:(rows[value]?value:raw(value));
+        const out=translate(source,code);records[attr]={source,last:out};if(out!==value)el.setAttribute(attr,out);
+      }
+      attributeSources.set(el,records);
+    }
+  }
   window.WordAheadI18n={apply,translate};
   new MutationObserver(()=>{const code=localStorage.getItem('wa-app-language')||'ko';if(code!=='ko')apply(code)}).observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
