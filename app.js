@@ -154,8 +154,8 @@ async function showPreview(video){
 
 }
 document.addEventListener('change',e=>{const libraryWord=e.target.dataset.libraryKnown;if(libraryWord){const entry=saved.find(x=>x.word===libraryWord);if(entry){entry.status=e.target.checked?'known':'learning';setKnownWord(libraryWord,e.target.checked);persist();renderLibrary();}return}const word=e.target.dataset.previewKnown;if(!word)return;let entry=saved.find(x=>x.word===word);if(!entry){const row=e.target.closest('.preview-word');entry={word,display:row?.querySelector('strong')?.textContent||word,definition:row?.querySelector('[data-definition]')?.textContent||'',source:activeVideo?.title||'맞춤 추천',added:Date.now()};saved.unshift(entry);}entry.status=e.target.checked?'known':'learning';setKnownWord(word,e.target.checked);persist();renderBadges();if(activeVideo?.text)renderRecommendations(activeVideo);});
-$('#recommend-preview').onclick=()=>showPreview(activeVideo);$('#open-library').onclick=()=>setView('library');
-$$('[data-library-filter]').forEach(button=>button.onclick=()=>{$('#word-filter').value=button.dataset.libraryFilter;renderLibrary();document.querySelector('#saved-words')?.scrollIntoView({behavior:'smooth',block:'start'});});
+$('#recommend-preview').onclick=()=>showPreview(activeVideo);
+$$('[data-library-filter]').forEach(button=>button.onclick=()=>{$('#word-filter').value=button.dataset.libraryFilter;setView('library');});
 function closePreview(){if(history.state?.view==='preview')history.back();else setView('home',false);}
 $('#close-preview').onclick=closePreview;
 $('#mark-known').addEventListener('change',()=>{if(currentWord){setKnownWord(currentWord.key,$('#mark-known').checked);persist();}if(activeVideo?.text)renderRecommendations(activeVideo);});
