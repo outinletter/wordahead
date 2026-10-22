@@ -75,7 +75,7 @@ function captionBlockMeasure(video){
 function captionSentences(video,withinLimit){
  const cues=captionTurnSegments(video.segments);
  if(!cues.length){const text=cleanCaptionText(video.text).replace(/\s+/g,' ');return Array.from(new Intl.Segmenter('en',{granularity:'sentence'}).segment(text),({segment})=>({text:cleanCaptionText(segment),start:null})).filter(x=>x.text);}
- const measure=withinLimit?{fits:withinLimit,dispose(){}}:captionBlockMeasure(video),fits=(text,start)=>measure.fits(text,start);
+ const measure={fits:withinLimit||(()=>true),dispose(){}},fits=(text,start)=>measure.fits(text,start);
  const boundary=(previous,next)=>next.turnStart||previous.speaker&&next.speaker&&previous.speaker!==next.speaker;
  const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start&&!boundary(last,cue)){last.text+=' '+cue.text;last.parts.push(...cue.parts);last.end=cue.end??last.end;}else merged.push({...cue});}
  const groups=[];let pending=null,sentenceCount=0;
@@ -87,18 +87,18 @@ function captionSentences(video,withinLimit){
    const words=cue.text.match(/\S+/g)||[],timings=cue.parts.flatMap(part=>(cleanCaptionText(part.text).match(/\S+/g)||[]).map((_,i)=>i===0?part.start:null));
    const next=merged[cueIndex+1]?.start,ends=[cue.end,next].filter(x=>Number.isFinite(x)&&x>cue.start),end=ends.length?Math.min(...ends):null;let offset=0;
    while(offset<words.length){
-    let count=1,high=words.length-offset;while(count<high){const mid=Math.ceil((count+high)/2);if(fits(words.slice(offset,offset+mid).join(' '),cue.start))count=mid;else high=mid-1;}
+    const count=1;
     const candidate=timings.length===words.length?timings[offset]:null,exact=offset===0?cue.start:Number.isFinite(candidate)&&candidate>cue.start?candidate:null;
     const estimated=exact===null&&Number.isFinite(end)&&end>cue.start;
     const start=exact!==null?exact:estimated?cue.start+(end-cue.start)*offset/words.length:cue.start;
     const piece={...cue,text:words.slice(offset,offset+count).join(' '),start,turnStart:offset===0&&cue.turnStart,estimated,sharedTimestamp:offset>0&&exact===null&&!estimated};
     if(pending&&(!fits(pending.text+' '+piece.text,pending.start)||boundary(pending,piece)))flush();
     if(!pending)pending={...piece};else pending.text+=' '+piece.text;
-    if(sentenceEnd(piece.text))sentenceCount++;
-    if(sentenceCount>=3||pending.text.length>=90)flush();offset+=count;
+    if(sentenceEnd(pending.text))sentenceCount++;
+    if(sentenceCount>=3)flush();offset+=count;
    }
   });
-  if(pending){const last=groups.at(-1);if(last&&!boundary(last,pending)&&!sentenceEnd(pending.text)&&fits(last.text+' '+pending.text,last.start))last.text+=' '+pending.text;else groups.push(pending);}
+  flush();
   return groups.sort((a,b)=>a.start-b.start);
  }finally{measure.dispose();}
 }
