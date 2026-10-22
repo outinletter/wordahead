@@ -75,8 +75,8 @@ function captionSentences(video,withinLimit){
  const measure=withinLimit?{fits:withinLimit,dispose(){}}:captionBlockMeasure(video),fits=(text,start)=>measure.fits(text,start);
  const boundary=(previous,next)=>next.turnStart||previous.speaker&&next.speaker&&previous.speaker!==next.speaker;
  const merged=[];for(const cue of cues){const last=merged.at(-1);if(last?.start===cue.start&&!boundary(last,cue)){last.text+=' '+cue.text;last.parts.push(...cue.parts);last.end=cue.end??last.end;}else merged.push({...cue});}
- const groups=[];let pending=null;
- const flush=()=>{if(pending)groups.push(pending);pending=null;};
+ const groups=[];let pending=null,sentenceCount=0;
+ const flush=()=>{if(pending)groups.push(pending);pending=null;sentenceCount=0;};
  const sentenceEnd=text=>/[.!?]["'”’\])]*$/.test(text)&&!/(?:\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\b[A-Z])\.$/i.test(text);
  try{
   merged.forEach((cue,cueIndex)=>{
@@ -91,7 +91,8 @@ function captionSentences(video,withinLimit){
     const piece={...cue,text:words.slice(offset,offset+count).join(' '),start,turnStart:offset===0&&cue.turnStart,estimated,sharedTimestamp:offset>0&&exact===null&&!estimated};
     if(pending&&(!fits(pending.text+' '+piece.text,pending.start)||boundary(pending,piece)))flush();
     if(!pending)pending={...piece};else pending.text+=' '+piece.text;
-    if(sentenceEnd(pending.text)||pending.text.length>=90)flush();offset+=count;
+    if(sentenceEnd(piece.text))sentenceCount++;
+    if(sentenceCount>=3||pending.text.length>=90)flush();offset+=count;
    }
   });
   if(pending){const last=groups.at(-1);if(last&&!boundary(last,pending)&&!sentenceEnd(pending.text)&&fits(last.text+' '+pending.text,last.start))last.text+=' '+pending.text;else groups.push(pending);}
@@ -115,7 +116,7 @@ function highlightContext(sentence,raw){const esc=escapeHtml(sentence);const saf
 function escapeRegExp(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 function speak(raw=currentWord?.raw){if(typeof raw!=='string')raw=currentWord?.raw;if(!raw)return;if(window.webkit?.messageHandlers?.speak){window.webkit.messageHandlers.speak.postMessage(raw);return}const utterance=new SpeechSynthesisUtterance(raw);utterance.lang='en-US';utterance.rate=.86;speechSynthesis.cancel();speechSynthesis.speak(utterance)}
 function saveCurrent(status='learning'){if(!currentWord)return;const {raw,key,context,entry}=currentWord;setKnownWord(key,status==='known');const known=saved.find(x=>x.word===key);if(known){known.status=status;known.context=context||known.context;if(entry){known.definition=entry[2];known.phonetic=entry[0];known.part=entry[1]}known.source=activeVideo?.title||known.source}else saved.unshift({word:key,display:raw,context,definition:entry?.[2]||'',phonetic:entry?.[0]||'',part:entry?.[1]||'',source:activeVideo?.title||'영상 자막',status,added:Date.now(),lookups:profiles[key]?.lookups||1});persist();setSaveWordButton(true);$('#mark-known').checked=status==='known';renderBadges();if(!$('#library-view').hidden)renderLibrary();notify(status==='known'?`${raw} — 알고 있는 단어로 기록했어요.`:`${raw}을(를) 익히는 단어로 저장했어요.`)}
-function renderBadges(){$('#nav-count').textContent=saved.length;$('#stat-total').textContent=saved.length;$('#stat-learning').textContent=saved.filter(x=>x.status!=='known').length;$('#stat-known').textContent=saved.filter(x=>x.status==='known').length}
+function renderBadges(){const learning=saved.filter(x=>x.status!=='known').length,known=saved.filter(x=>x.status==='known').length;for(const [id,value] of [['nav-count',saved.length],['stat-total',saved.length],['stat-learning',learning],['stat-known',known],['home-stat-total',saved.length],['home-stat-learning',learning],['home-stat-known',known]]){const el=$('#'+id);if(el)el.textContent=value;}const home=$('#home-saved-words');if(home){const entries=saved.slice(0,6);home.innerHTML=entries.length?entries.map(w=>`<div class="word-row"><div class="word-main"><strong>${escapeHtml(w.display||w.word)}</strong></div><div class="word-definition">${escapeHtml(plainDictionaryMeaning(w.definition||DICTIONARY[w.word]?.[2]||'뜻을 확인하려면 단어를 눌러주세요.'))}</div></div>`).join(''):'<div class="empty-state">저장한 단어가 아직 없어요.</div>';}}
 function renderLibrary(){renderBadges();const filter=$('#word-filter').value;const entries=saved.filter(w=>filter==='all'||w.status===filter);$('#saved-words').innerHTML=entries.length?entries.map(w=>`<div class="word-row"><div class="word-main"><strong>${escapeHtml(w.display||w.word)}</strong><small>${escapeHtml(w.source||'자막에서 저장')}</small></div><div class="word-definition">${escapeHtml(plainDictionaryMeaning(w.definition||DICTIONARY[w.word]?.[2]||'뜻을 확인하려면 자막에서 이 단어를 눌러주세요.'))}${w.context?`<small style="display:block;color:#a0aaa7;margin-top:4px">“${escapeHtml(w.context).slice(0,90)}${w.context.length>90?'…':''}”</small>`:''}</div><span class="word-state ${w.status==='known'?'known':''}">${w.status==='known'?'알고 있어요':'익히는 중'}</span><label class="library-known-toggle" title="알고 있는 단어로 표시"><input type="checkbox" data-library-known="${escapeHtml(w.word)}" ${w.status==='known'?'checked':''} aria-label="${escapeHtml(w.display||w.word)} 알고 있어요"></label></div>`).join(''):'<div class="empty-state">아직 저장한 단어가 없어요.<br>자막에서 궁금한 단어를 눌러 단어장에 담아보세요.</div>'}
 function openCaptionDialog(video=null){$('#caption-dialog').dataset.videoId=video?.id||'';$('#caption-title').value=video?.title||'내가 고른 영어 영상';$('#caption-text').value=video?.text||'';$('#caption-dialog').showModal()}
 function addCaption(title,text,videoId=''){const clean=cleanCaptionText(text);if(!clean){notify('영어 자막을 붙여 넣거나 예시 자막을 불러와주세요.');return}let video=videos.find(v=>v.id===videoId);if(video){video.text=clean;video.caption=true;video.title=title||video.title}else{video={id:`local-${Date.now()}`,title:title||'내가 추가한 영상 자막',channel:'내 자막',meta:'직접 추가 · 자막',duration:'—',image:'',caption:true,description:'직접 붙여 넣은 영어 자막',text:clean};videos.unshift(video)}persist();renderCards();$('#caption-dialog').close();openReader(video)}
@@ -150,7 +151,7 @@ async function showPreview(video){
 
 }
 document.addEventListener('change',e=>{const libraryWord=e.target.dataset.libraryKnown;if(libraryWord){const entry=saved.find(x=>x.word===libraryWord);if(entry){entry.status=e.target.checked?'known':'learning';setKnownWord(libraryWord,e.target.checked);persist();renderLibrary();}return}const word=e.target.dataset.previewKnown;if(!word)return;let entry=saved.find(x=>x.word===word);if(!entry){const row=e.target.closest('.preview-word');entry={word,display:row?.querySelector('strong')?.textContent||word,definition:row?.querySelector('[data-definition]')?.textContent||'',source:activeVideo?.title||'맞춤 추천',added:Date.now()};saved.unshift(entry);}entry.status=e.target.checked?'known':'learning';setKnownWord(word,e.target.checked);persist();renderBadges();if(activeVideo?.text)renderRecommendations(activeVideo);});
-$('#recommend-preview').onclick=()=>showPreview(activeVideo);
+$('#recommend-preview').onclick=()=>showPreview(activeVideo);$('#open-library').onclick=()=>setView('library');
 $$('[data-library-filter]').forEach(button=>button.onclick=()=>{$('#word-filter').value=button.dataset.libraryFilter;renderLibrary();document.querySelector('#saved-words')?.scrollIntoView({behavior:'smooth',block:'start'});});
 function closePreview(){if(history.state?.view==='preview')history.back();else setView('home',false);}
 $('#close-preview').onclick=closePreview;

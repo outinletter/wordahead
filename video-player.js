@@ -40,5 +40,7 @@ window.addEventListener('message',event=>{
   if(Number.isFinite(event.data.rate)){WordAheadVideo.playbackRate=WordAheadVideo.rate(event.data.rate);localStorage.setItem('wa-youtube-playback-rate',String(WordAheadVideo.playbackRate));window.dispatchEvent(new CustomEvent('wordahead:playbackrate',{detail:{rate:WordAheadVideo.playbackRate}}));}
   window.dispatchEvent(new CustomEvent('wordahead:playbacktime',{detail:{time:event.data.time,videoId:event.data.videoId}}));
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden)WordAheadVideo.pause();});
-window.addEventListener('pagehide',()=>WordAheadVideo.pause());
+// Keep the selected YouTube speed when the app is backgrounded. The native
+// player owns playback; backgrounding must not send a pause command.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)WordAheadVideo.applyRate();});
+window.addEventListener('pageshow',()=>WordAheadVideo.applyRate());
