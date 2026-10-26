@@ -11,3 +11,8 @@ assert(!result.includes('airport')&&!result.includes('airports')&&!result.includ
 vm.runInContext('knownWords.add(normalize("photosynthesis"))',ctx);const after=vm.runInContext('suggestWords({text:"photosynthesis microarchitecture"}).map(x=>x.raw)',ctx);assert(!after.includes('photosynthesis'));
 console.log('PASS: 4,000 headwords excluded; all prior NGSL forms retained; plural forms excluded; specialist terms remain; known words excluded');
 console.log('Total forms:',vm.runInContext('WordAheadBasicVocabulary.size',ctx));
+
+const full=vm.runInContext('suggestWords({text:[...WordAheadBasicVocabulary].join(" ")})',ctx);assert.equal(full.length,0,'Every basic vocabulary form must be excluded from preview');
+vm.runInContext('saved.push({word:"airport",status:"learning",definition:"공항"})',ctx);
+assert.equal(vm.runInContext('suggestWords({text:"Airport AIRPORTS airport’s"}).length',ctx),0);
+console.log('PASS: all 16,842 basic forms excluded from actual recommendations, including saved learning words, capitals and possessives');

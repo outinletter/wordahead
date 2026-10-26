@@ -130,3 +130,9 @@ body.library-open .topbar,body.library-open .footer{display:none}body.library-op
 .preview-size-tools{margin:12px 0;gap:12px}
 .preview-size-tools button{width:36px;height:36px}
 #transcript-content{user-select:text;-webkit-user-select:text}
+
+#saved-words .word-row{grid-template-columns:minmax(90px,1fr) minmax(0,2fr) 32px}
+#home-saved-words .word-row{grid-template-columns:minmax(90px,1fr) minmax(0,2fr)}
+#saved-words .word-row>.word-main{grid-column:1;grid-row:1;min-width:0;overflow-wrap:anywhere}
+#saved-words .word-row>.word-definition{grid-column:2;grid-row:1;min-width:0;overflow-wrap:anywhere}
+#saved-words .word-row>.library-known-toggle{grid-column:3;grid-row:1}
