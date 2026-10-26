@@ -120,7 +120,7 @@ body.library-open .topbar,body.library-open .footer{display:none}body.library-op
 .language-select{display:block;width:100%;margin:6px 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);font:inherit}.settings-language-label{display:block;margin-top:4px;font-weight:600}
 
 /* Dictionary header and independently adjustable preview text. */
-.word-sheet{grid-template-areas:"handle" "word" "meaning" "retry";grid-template-rows:18px 30px minmax(0,1fr) auto;padding-left:20px;padding-right:20px}
+.word-sheet{grid-template-areas:"handle" "word" "meaning" "retry";grid-template-rows:12px 30px minmax(0,1fr) auto;padding-left:20px;padding-right:20px}
 .word-sheet .sheet-word-row h2{flex:0 1 auto;min-width:0}
 .word-sheet .sheet-word-row .phonetic{flex:0 1 auto;max-width:35%;overflow-wrap:anywhere}
 .word-sheet .sheet-word-row .sheet-primary{width:26px;height:26px;font-size:18px;margin-left:auto;flex-shrink:0}
@@ -136,3 +136,5 @@ body.library-open .topbar,body.library-open .footer{display:none}body.library-op
 #saved-words .word-row>.word-main{grid-column:1;grid-row:1;min-width:0;overflow-wrap:anywhere}
 #saved-words .word-row>.word-definition{grid-column:2;grid-row:1;min-width:0;overflow-wrap:anywhere}
 #saved-words .word-row>.library-known-toggle{grid-column:3;grid-row:1}
+
+.word-sheet .sheet-grabber{height:12px;min-height:12px;padding:4px 0}

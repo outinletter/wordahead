@@ -40,7 +40,7 @@ history.replaceState({view:'home'},'','#home');window.addEventListener('popstate
 // Put the vocabulary summary on the first screen so learning progress is visible immediately.
 const vocabularySummary=$('.home-learning-summary'),homeImport=$('.import-card');
 if(vocabularySummary&&homeImport)homeImport.parentNode.insertBefore(vocabularySummary,homeImport);
-function setView(name,record=true){if(name!=='reader'){saveReaderPosition();WordAheadVideo.hide();}else WordAheadVideo.show(activeVideo);if(record&&history.state?.view!==name)history.pushState({view:name},'',`#${name}`);document.body.classList.toggle('reading',name==='reader');document.body.classList.toggle('previewing',name==='preview');$('#reader-view').hidden=true;setWordSheet(false);$$('.view').forEach(v=>v.hidden=true);if(name==='preview'){$('#preview-dialog').hidden=false;window.scrollTo(0,0);return}$('#preview-dialog').hidden=true;if(name==='reader'){$('#reader-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.remove('active'));restoreReaderPosition();return}$(name==='library'?'#library-view':'#home-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));renderLibrary();window.scrollTo(0,0)}
+function setView(name,record=true){if(name!=='reader'){saveReaderPosition();WordAheadVideo.hide();}if(record&&history.state?.view!==name){try{history.pushState({view:name},'',`#${name}`);}catch(error){console.warn('화면 이동 기록을 저장하지 못했습니다.',error);}}document.body.classList.toggle('reading',name==='reader');document.body.classList.toggle('previewing',name==='preview');$('#reader-view').hidden=true;setWordSheet(false);$$('.view').forEach(v=>v.hidden=true);if(name==='preview'){$('#preview-dialog').hidden=false;window.scrollTo(0,0);return}$('#preview-dialog').hidden=true;if(name==='reader'){$('#reader-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.remove('active'));restoreReaderPosition();WordAheadVideo.show(activeVideo);return}$(name==='library'?'#library-view':'#home-view').hidden=false;$$('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===name));renderLibrary();window.scrollTo(0,0)}
 function cleanCaptionText(value){return String(value||'').replace(/>>/g,'').replace(/\s{2,}/g,' ').trim()}
 function captionTurnSegments(source){
  const result=[];
@@ -138,8 +138,8 @@ async function showPreview(video){
   $('#preview-video-title').textContent=video.title;
   $('#preview-words').innerHTML=words.length?words.map(w=>`<div class="preview-word" role="listitem"><label class="known-toggle"><input type="checkbox" data-preview-known="${escapeHtml(w.word)}" aria-label="${escapeHtml(w.raw)} 알고 있는 단어로 표시"></label><div class="preview-word-content"><div class="preview-word-heading"><strong>${escapeHtml(w.raw)}</strong><button type="button" class="speak-button" data-pronounce="${escapeHtml(w.raw)}" aria-label="${escapeHtml(w.raw)} 발음 듣기">◖))</button></div><small data-definition="${escapeHtml(w.word)}">${escapeHtml(plainDictionaryMeaning(WordAheadDictionary.validMeaning(w.entry?.[2])?w.entry[2]:'뜻을 확인하는 중…'))}</small></div></div>`).join(''):'<div class="empty-state">추천할 낯선 단어가 없어요.</div>';
   setView('preview');
-  const request=crypto.randomUUID();dialog.dataset.request=request;
-  const active=()=>!dialog.hidden&&dialog.dataset.request===request;
+  const request={};dialog.previewRequest=request;
+  const active=()=>!dialog.hidden&&dialog.previewRequest===request;
   const update=(w,entry)=>{
     if(!active())return;
     const meaning=WordAheadDictionary.validMeaning(entry?.[2])?plainDictionaryMeaning(entry[2]):null;
@@ -149,9 +149,20 @@ async function showPreview(video){
     if(meaning&&record){record.definition=meaning;record.phonetic=entry[0]||'';record.part=entry[1]||'';persist();}
   };
   async function pool(items,run){let cursor=0;await Promise.all(Array.from({length:Math.min(4,items.length)},async()=>{while(active()&&cursor<items.length){const w=items[cursor++];await run(w);}}));}
-  const missing=[];
-  await pool(words,async w=>{try{const result=await WordAheadDictionary.preferred(w.raw,w.word);const entry=result?.entry||w.entry;if(WordAheadDictionary.validMeaning(entry?.[2]))update(w,entry);else missing.push(w);}catch{missing.push(w);}});
-  await pool(missing,async w=>{try{const result=await WordAheadDictionary.resolve(w.raw,w.word);update(w,result?.entry||w.entry);}catch{update(w,w.entry);}});
+  const pending=new Set(words);
+  const deadline=setTimeout(()=>{for(const w of pending)update(w,null);},12000);
+  try{
+    await pool(words,async w=>{
+      let timer;
+      try{
+        const cached=WordAheadDictionary.cached(w.raw)||WordAheadDictionary.cached(w.word);
+        if(cached||WordAheadDictionary.validMeaning(w.entry?.[2])){update(w,cached?.entry||w.entry);return;}
+        const result=await Promise.race([WordAheadDictionary.resolve(w.raw,w.word),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('뜻 조회 시간 초과')),12000);})]);
+        update(w,result?.entry||w.entry);
+      }catch{update(w,w.entry);}finally{clearTimeout(timer);pending.delete(w);}
+    });
+  }finally{clearTimeout(deadline);}
+
 
 }
 document.addEventListener('change',e=>{const libraryWord=e.target.dataset.libraryKnown;if(libraryWord){const entry=saved.find(x=>x.word===libraryWord);if(entry){entry.status=e.target.checked?'known':'learning';setKnownWord(libraryWord,e.target.checked);persist();renderLibrary();}return}const word=e.target.dataset.previewKnown;if(!word)return;let entry=saved.find(x=>x.word===word);if(!entry){const row=e.target.closest('.preview-word');entry={word,display:row?.querySelector('strong')?.textContent||word,definition:row?.querySelector('[data-definition]')?.textContent||'',source:activeVideo?.title||'맞춤 추천',added:Date.now()};saved.unshift(entry);}entry.status=e.target.checked?'known':'learning';setKnownWord(word,e.target.checked);persist();renderBadges();if(activeVideo?.text)renderRecommendations(activeVideo);});

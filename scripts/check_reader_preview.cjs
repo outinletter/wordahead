@@ -1,0 +1,14 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const app=fs.readFileSync('app.js','utf8');
+const nodes=new Map();const node=()=>({hidden:false,dataset:{},classList:{remove(){},toggle(){}},getBoundingClientRect:()=>({bottom:60})});
+for(const id of ['#home-view','#library-view','#reader-view','#preview-dialog'])nodes.set(id,node());
+const context={document:{body:{classList:{toggle(){}}}},history:{state:{view:'home'},pushState(){throw new Error('history unavailable')}},console:{warn(){}},window:{scrollTo(){}},saveReaderPosition(){},setWordSheet(){},restoreReaderPosition(){},renderLibrary(){},activeVideo:{},$:id=>nodes.get(id),$$:selector=>selector==='.view'?[nodes.get('#home-view'),nodes.get('#library-view'),nodes.get('#preview-dialog')]:[],WordAheadVideo:{hide(){},show(){assert(nodes.get('#home-view').hidden);assert(!nodes.get('#reader-view').hidden);}}};
+vm.createContext(context);vm.runInContext(app.slice(app.indexOf('function setView('),app.indexOf('function cleanCaptionText')),context);
+context.setView('reader');assert(nodes.get('#home-view').hidden);assert(!nodes.get('#reader-view').hidden);
+console.log('PASS: transcript visible before native player opens, even when history recording fails');
+const words=Array.from({length:9},(_,i)=>({raw:'test'+i,word:'test'+i}));const cells=new Map(words.map(w=>[w.word,{textContent:'뜻을 확인하는 중…',append(){}}]));
+nodes.set('#preview-words',{});nodes.set('#preview-video-title',{});nodes.get('#preview-dialog').querySelector=selector=>cells.get(selector.match(/"(.*?)"/)[1]);
+Object.assign(context,{suggestWords:()=>words,escapeHtml:String,plainDictionaryMeaning:String,setView(){nodes.get('#preview-dialog').hidden=false;},saved:[],persist(){},setTimeout:(fn,ms)=>setTimeout(fn,Math.min(ms,10)),clearTimeout,WordAheadDictionary:{cached:()=>null,validMeaning:x=>!!x,resolve:()=>new Promise(()=>{}),failureMessage:()=> '다시 조회해주세요.'}});
+context.document.createElement=()=>({setAttribute(){}});
+vm.runInContext(app.slice(app.indexOf('async function showPreview('),app.indexOf("document.addEventListener('change'",app.indexOf('async function showPreview('))),context);
+(async()=>{await context.showPreview({id:'test',text:'test',title:'Test'});for(const cell of cells.values())assert(!cell.textContent.includes('확인하는 중'));console.log('PASS: stalled lookups and queued rows leave loading state and offer retry');})().catch(error=>{console.error(error);process.exitCode=1;});
