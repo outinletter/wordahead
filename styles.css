@@ -138,3 +138,38 @@ body.library-open .topbar,body.library-open .footer{display:none}body.library-op
 #saved-words .word-row>.library-known-toggle{grid-column:3;grid-row:1}
 
 .word-sheet .sheet-grabber{height:12px;min-height:12px;padding:4px 0}
+
+/* Compact home header and a clearer video entry form. */
+.top-nav[hidden]{display:none}
+#home-view .welcome-row{padding:22px 0 14px}
+#home-view .home-learning-summary{margin:14px 0 24px}
+.import-card{padding:22px;border-radius:18px;column-gap:12px;box-shadow:0 8px 28px #173c3206}
+.import-copy h2{margin:2px 0 6px;line-height:1.4}
+.import-copy p{font-size:13px;line-height:1.6;margin:0;color:var(--muted)}
+.import-card .url-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;height:auto;border:0;padding:0;background:transparent;margin-top:18px;overflow:visible}
+.url-field{display:flex;align-items:center;gap:10px;min-width:0;padding:0 14px;min-height:48px;border:1px solid #ccdcd7;border-radius:12px;background:#f6faf8;transition:border-color .15s,box-shadow .15s}
+.url-field:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px #0d857916}
+.url-form .url-field input{width:100%;min-width:0;flex:1;border:0;outline:0;background:transparent;padding:12px 0;font-size:16px;color:var(--ink)}
+.url-form .url-field .url-icon{flex:none;margin:0;color:#df675a;font-size:14px}
+.import-card .url-form .primary-button{min-height:48px;border-radius:12px;padding:12px 20px;font-size:15px;white-space:nowrap}
+.import-card .import-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);white-space:normal}
+.import-foot #import-status{flex:1;min-width:160px;font-size:12px;line-height:1.5}
+.import-foot .status-dot{display:none}
+.import-foot .text-button{min-height:44px;font-size:13px;padding:10px 12px;border:1px solid #d9e7e1;border-radius:10px;background:#f3f8f5;color:var(--teal-dark);white-space:normal}
+.dark-mode .url-field,.dark-mode .import-foot .text-button{background:#243530;border-color:#48615a;color:var(--ink)}
+@media(max-width:600px){
+ .topbar{min-height:66px;height:auto;padding:10px 0;flex-wrap:nowrap;gap:12px}
+ .topbar .brand{font-size:26px}
+ #home-view .welcome-row{padding:20px 0 12px}
+ #home-view .welcome-row .eyebrow{margin-bottom:8px}
+ #home-view .welcome-row h1{font-size:26px;line-height:1.35}
+ #home-view .welcome-row .subhead{margin:10px 0 0;line-height:1.6}
+ #home-view .home-learning-summary{margin:12px 0 22px}
+ .import-card{padding:18px 16px;grid-template-columns:32px minmax(0,1fr);column-gap:10px}
+ .import-icon{width:32px;height:32px;border-radius:10px}
+ .import-copy h2{font-size:17px;margin-top:3px}
+ .import-copy p{font-size:12px;line-height:1.6}
+ .import-card .url-form{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:16px}
+ .import-card .url-form .primary-button{width:100%;min-height:46px}
+ .import-foot .text-button{width:100%;text-align:center}
+}

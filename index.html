@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.png?v=20261021-5" type="image/png">
   <link rel="apple-touch-icon" href="icon.png?v=20261021-5">
-  <link rel="stylesheet" href="styles.css?v=20261027-2">
+  <link rel="stylesheet" href="styles.css?v=20261027-3">
   <title>WordAhead — 자막으로 배우는 영어</title>
 </head>
 <body>
@@ -32,7 +32,7 @@
         <div class="import-copy"><h2>보고 싶은 영상으로 시작하기</h2><p>예시 자막이나 직접 입력한 자막으로 시작할 수 있어요. YouTube 자동 수집은 영상·지역에 따라 제한될 수 있습니다.</p></div>
         <form id="video-form" class="url-form">
           <label class="sr-only" for="video-url">YouTube URL</label>
-          <span class="url-icon">▶</span><input id="video-url" type="url" placeholder="YouTube 영상 링크 붙여넣기" autocomplete="url">
+          <div class="url-field"><span class="url-icon" aria-hidden="true">▶</span><input id="video-url" type="url" placeholder="YouTube 영상 링크 붙여넣기" autocomplete="url" enterkeyhint="go"></div>
           <button type="submit" class="primary-button">영상 추가 <span>→</span></button>
         </form>
         <div class="import-foot"><span class="status-dot"></span><span id="import-status">붙여넣은 자막으로도 바로 시작할 수 있어요.</span><button id="paste-caption-button" class="text-button">자막 직접 붙여넣기</button></div>
@@ -43,7 +43,7 @@
 
       <section class="home-learning-summary" aria-label="내 단어장">
         <div class="section-heading"><div><p class="eyebrow">YOUR VOCABULARY</p><h2>내 단어장</h2></div></div>
-        <section class="stats-row"><button type="button" class="stat-card" data-library-filter="all"><span>저장한 단어</span><strong id="home-stat-total">0</strong><small>나만의 어휘</small></button><button type="button" class="stat-card" data-library-filter="learning"><span>익히는 중</span><strong id="home-stat-learning">0</strong><small>복습이 필요해요</small></button><button type="button" class="stat-card" data-library-filter="known"><span>알고 있어요</span><strong id="home-stat-known">0</strong><small>잘하고 있어요</small></button></section>
+        <section class="stats-row"><button type="button" class="stat-card" data-library-filter="all"><span>저장한 단어</span><strong id="home-stat-total">0</strong><small>나만의 어휘</small></button><button type="button" class="stat-card" data-library-filter="known"><span>알고 있어요</span><strong id="home-stat-known">0</strong><small>잘하고 있어요</small></button><button type="button" class="stat-card" data-library-filter="learning"><span>익히는 중</span><strong id="home-stat-learning">0</strong><small>복습이 필요해요</small></button></section>
       </section>
 
       <section class="how-card"><div class="how-art"><div class="art-card back"></div><div class="art-card front"><span>curious</span><i>🔊</i><small>궁금한 · 호기심 많은</small></div><span class="spark s1">✳</span><span class="spark s2">✦</span></div><div><p class="eyebrow">LEARN YOUR WAY</p><h2>당신이 모를 단어를<br>영상 전에 먼저 준비해요.</h2><p>단어를 찾아보고 익힐수록, 다음 영상의 단어장이 더 나에게 맞아져요.</p><button class="text-button" id="how-link">나만의 단어장 알아보기 <span>→</span></button></div></section>
@@ -78,11 +78,11 @@
   <main id="preview-dialog" class="view preview-page" hidden><header class="preview-header"><h1>먼저 살펴볼 단어</h1><button id="close-preview" aria-label="미리보기 닫고 이전 화면으로 돌아가기">닫기 ×</button></header><p id="preview-video-title"></p><div class="reading-tools preview-size-tools" aria-label="단어장 글씨 크기"><button id="preview-font-down" aria-label="단어장 글씨 줄이기">−</button><output id="preview-font-size">16</output><button id="preview-font-up" aria-label="단어장 글씨 키우기">+</button></div><div id="preview-words" class="preview-words" role="list" aria-label="단어와 뜻"></div></main>
   <script src="dictionary/basic-vocabulary.js?v=20261021-5"></script>
   <script src="dictionary/extended-basic.js?v=20261021-5"></script>
-  <script src="dictionary.js?v=20261027-2"></script>
+  <script src="dictionary.js?v=20261027-3"></script>
   <script src="billing.js?v=20261021-5"></script>
-  <script src="captions.js?v=20261027-2"></script>
+  <script src="captions.js?v=20261027-3"></script>
   <script src="video-player.js?v=20261021-5"></script>
   <script src="i18n.js?v=20261022-1"></script>
-  <script src="app.js?v=20261027-2"></script>
+  <script src="app.js?v=20261027-3"></script>
 </body>
 </html>
