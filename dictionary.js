@@ -1,5 +1,13 @@
 const WordAheadDictionary = {
   shards:new Map(), pending:new Map(),
+  definitions:(()=>{try{return JSON.parse(localStorage.getItem('wa-dictionary-cache'))||{};}catch{return {};}})(),
+  cached(raw,key){return this.definitions[raw.toLowerCase()]||this.definitions[key]||null;},
+  remember(raw,key,result){
+    if(!result?.entry?.[2])return result;
+    for(const word of new Set([raw.toLowerCase(),key,result.word]))if(word)this.definitions[word]=result;
+    try{localStorage.setItem('wa-dictionary-cache',JSON.stringify(this.definitions));}catch{notify('뜻을 오프라인으로 저장할 공간이 부족합니다.');}
+    return result;
+  },
   install(id,entries) {this.shards.delete(id);this.shards.set(id,entries);while(this.shards.size>8)this.shards.delete(this.shards.keys().next().value);},
   async lookup(word) {
     const key = word.toLowerCase();
@@ -8,8 +16,9 @@ const WordAheadDictionary = {
     if (!this.shards.has(id)) {
       if (!this.pending.has(id)) this.pending.set(id,new Promise((resolve,reject) => {
         const script=document.createElement('script');script.src=`dictionary/${id}.js?v=20261008`;
-        script.onload=()=>{resolve(this.shards.get(id));this.pending.delete(id);script.remove();};
-        script.onerror=()=>{this.pending.delete(id);script.remove();reject(new Error('내장 사전을 불러올 수 없습니다.'));};
+        const timer=setTimeout(()=>{script.onerror();},10000);
+        script.onload=()=>{clearTimeout(timer);resolve(this.shards.get(id));this.pending.delete(id);script.remove();};
+        script.onerror=()=>{clearTimeout(timer);this.pending.delete(id);script.remove();reject(new Error('내장 사전을 불러올 수 없습니다.'));};
         document.head.append(script);
       }));
       const entries=await this.pending.get(id);return entries&&Object.hasOwn(entries,key)?entries[key]:null;
@@ -68,6 +77,12 @@ const WordAheadDictionary = {
     }catch{return null;}finally{clearTimeout(timer);}
   },
   async resolve(raw,key) {
+    const cached=this.cached(raw,key);
+    if(cached?.entry[3]==='ko')return cached;
+    const result=await this.resolveUncached(raw,key);
+    return this.remember(raw,key,result)||cached;
+  },
+  async resolveUncached(raw,key) {
     let local=null;try{local=await this.preferred(raw,key);}catch{}
     if(local?.entry[3]==='ko'||navigator.onLine===false)return local;
     const words=[...new Set([raw.toLowerCase().replaceAll('’',"'"),local?.word,key].filter(Boolean))];

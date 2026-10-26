@@ -7,11 +7,10 @@ const WordAheadCaptions = {
     $('#transcript-content').innerHTML='<p class="empty-state" role="status">영어 자막을 수집하고 있어요…</p>';
     try {
       const data=await this.fetch(video.youtubeId);
-      if(activeVideo!==video||$('#reader-view').hidden)return;
       video.text=data.segments.map(x=>x.text).join('\n');video.segments=data.segments;
       video.title=data.title;video.channel=data.channel;video.caption=true;
       video.meta=data.isGenerated?'영어(자동) 자막':'영어 자막';
-      persist();renderCards();openReader(video);
+      persist();renderCards();if(activeVideo===video&&!$('#reader-view').hidden)openReader(video);
     } catch(error) {
       if(activeVideo!==video||$('#reader-view').hidden)return;
       $('#transcript-content').innerHTML=`<div class="empty-state"><p>${escapeHtml(error.message)}</p><button class="primary-button" data-action="read" data-id="${escapeHtml(video.id)}">다시 시도</button><button class="text-button" id="manual-caption">자막 직접 입력</button></div>`;
