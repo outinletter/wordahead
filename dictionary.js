@@ -4,7 +4,15 @@ const WordAheadDictionary = {
   nativeRequests:new Map(),
   receive(payload){const pending=this.nativeRequests.get(payload.id);if(!pending)return;this.nativeRequests.delete(payload.id);clearTimeout(pending.timer);payload.error?pending.reject(new Error(payload.error)):pending.resolve(payload.result);},
   native(action,extra={}){return new Promise((resolve,reject)=>{const id=crypto.randomUUID(),timer=setTimeout(()=>{this.nativeRequests.delete(id);reject(new Error('사전 응답이 지연됩니다. 다시 시도해주세요.'));},action==='download'?45*60*1000:action==='online'?15000:10000);this.nativeRequests.set(id,{resolve,reject,timer});try{window.webkit.messageHandlers.dictionaryStore.postMessage({id,action,...extra});}catch(error){clearTimeout(timer);this.nativeRequests.delete(id);reject(error);}});},
+  localEntries:new Map(),
+  async prefetch(words){
+    if(!window.webkit?.messageHandlers?.dictionaryStore)return;
+    const keys=[...new Set(words.flatMap(w=>[w.raw.toLowerCase(),w.word]))];
+    const result=await this.native('lookupMany',{words:JSON.stringify(keys)});
+    this.localEntries=new Map(Object.entries(result.entries||{}));
+  },
   async lookup(word) {
+    if(this.localEntries.has(word.toLowerCase()))return this.localEntries.get(word.toLowerCase());
     if(window.webkit?.messageHandlers?.dictionaryStore){const result=await this.native('lookup',{word:word.toLowerCase()});return result.entry;}
 
     const key = word.toLowerCase();

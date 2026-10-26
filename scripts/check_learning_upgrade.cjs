@@ -4,6 +4,12 @@ vm.createContext(context);vm.runInContext(fs.readFileSync('dictionary.js','utf8'
 (async()=>{const d=context.dictionary,translate=d.koreanTranslation;
 for(const text of ['낱말은 한국어 뜻풀이가 필요합니다. 뜻풀이를 추가한 다음 이 틀 ({rfdety})을 지워 주세요','사전Name','불러오는 중…'])assert(!d.validMeaning(text));
 assert(d.validMeaning('전송; 전달'));values.set('wa-korean-meanings','null');assert.deepEqual(d.readCache(),{});
+const native=d.native;let batches=0;
+context.window.webkit={messageHandlers:{dictionaryStore:{}}};
+d.native=async(action,extra)=>{assert.equal(action,'lookupMany');assert.deepEqual(JSON.parse(extra.words),['turkey','unknownword']);batches++;return{entries:{turkey:['','','칠면조','ko'],unknownword:null}};};
+await d.prefetch([{raw:'turkey',word:'turkey'},{raw:'unknownword',word:'unknownword'}]);
+assert.equal((await d.lookup('turkey'))[2],'칠면조');assert.equal(await d.lookup('unknownword'),null);assert.equal(batches,1);
+d.native=native;delete context.window.webkit;d.localEntries.clear();
 d.lookup=async word=>word==='transmission'?['','','전송','ko']:null;
 assert.equal((await d.preferred('transmissions','transmissions')).entry[2],'전송');
 d.preferred=async()=>({word:'rev',entry:['','','뜻풀이를 추가해 주세요','ko']});

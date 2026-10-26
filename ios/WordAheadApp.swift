@@ -388,6 +388,24 @@ actor OfflineDictionaryStore {
         var values = URLResourceValues(); values.isExcludedFromBackup = true; try url.setResourceValues(values)
         return url
     }
+    private func localEntry(_ key:String, manifest:Manifest, root:URL) throws -> Any? {
+        let hash = Array(SHA256.hash(data:Data(key.utf8)))[0]
+        let shard = String(format:"%02x",hash)
+        if let info = manifest.shards[shard] {
+            let url = root.appendingPathComponent(info.sha256+".json")
+            if let entries = shardEntries[shard], let entry = entries[key] {return entry}
+            if shardEntries[shard] == nil, let data = try? Data(contentsOf:url), let entries = try JSONSerialization.jsonObject(with:data) as? [String:Any] {
+                if shardEntries.count >= 8 {shardEntries.removeAll()}
+                shardEntries[shard] = entries
+                if let entry = entries[key] {return entry}
+            }
+        }
+        if coreEntries == nil {
+            let coreURL = Bundle.main.url(forResource:"core-ko",withExtension:"json",subdirectory:"Web/dictionary")!
+            coreEntries = try JSONSerialization.jsonObject(with:Data(contentsOf:coreURL)) as? [String:Any]
+        }
+        return coreEntries?[key]
+    }
     func handle(_ request: [String:String]) async throws -> [String:Any] {
         if request["action"] == "online" {
             guard let address=request["url"],address.count<=4000,let url=URL(string:address),url.scheme=="https",
@@ -399,23 +417,16 @@ actor OfflineDictionaryStore {
         }
         let manifest = try manifest(), root = try directory()
         if request["action"] == "lookup" {
-            let key = request["word"] ?? ""
-            let hash = Array(SHA256.hash(data:Data(key.utf8)))[0]
-            let shard = String(format:"%02x",hash)
-            if let info = manifest.shards[shard] {
-                let url = root.appendingPathComponent(info.sha256+".json")
-                if let entries = shardEntries[shard], let entry = entries[key] {return ["entry":entry]}
-                if shardEntries[shard] == nil, let data = try? Data(contentsOf:url), let entries = try JSONSerialization.jsonObject(with:data) as? [String:Any] {
-                    if shardEntries.count >= 8 {shardEntries.removeAll()}
-                    shardEntries[shard] = entries
-                    if let entry = entries[key] {return ["entry":entry]}
-                }
+            return ["entry":try localEntry(request["word"] ?? "",manifest:manifest,root:root) ?? NSNull()]
+        }
+        if request["action"] == "lookupMany" {
+            guard let data=request["words"]?.data(using:.utf8),let words=try JSONSerialization.jsonObject(with:data) as? [String],words.count<=12000,words.allSatisfy({$0.count<=100}) else {throw URLError(.badURL)}
+            let grouped=Dictionary(grouping:Set(words)) { String(format:"%02x",Array(SHA256.hash(data:Data($0.utf8)))[0]) }
+            var entries:[String:Any]=[:]
+            for shard in grouped.keys.sorted() {
+                for key in grouped[shard] ?? [] {entries[key]=try localEntry(key,manifest:manifest,root:root) ?? NSNull()}
             }
-            if coreEntries == nil {
-                let coreURL = Bundle.main.url(forResource:"core-ko",withExtension:"json",subdirectory:"Web/dictionary")!
-                coreEntries = try JSONSerialization.jsonObject(with:Data(contentsOf:coreURL)) as? [String:Any]
-            }
-            return ["entry":coreEntries?[key] ?? NSNull()]
+            return ["entries":entries]
         }
         if request["action"] == "download" {
             guard !downloading else {return ["busy":true]}

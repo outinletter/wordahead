@@ -140,32 +140,43 @@ async function showPreview(video){
   if(!video.text){if(video.youtubeId)await WordAheadCaptions.open(video);else openCaptionDialog(video);if(!video.text)return;}
   const words=suggestWords(video),dialog=$('#preview-dialog');dialog.dataset.videoId=video.id;
   $('#preview-video-title').textContent=video.title;
-  $('#preview-words').innerHTML=words.length?words.map(w=>`<div class="preview-word" role="listitem"><label class="known-toggle"><input type="checkbox" data-preview-known="${escapeHtml(w.word)}" aria-label="${escapeHtml(w.raw)} 알고 있는 단어로 표시"></label><div class="preview-word-content"><div class="preview-word-heading"><strong>${escapeHtml(w.raw)}</strong><button type="button" class="speak-button" data-pronounce="${escapeHtml(w.raw)}" aria-label="${escapeHtml(w.raw)} 발음 듣기">◖))</button></div><small data-definition="${escapeHtml(w.word)}">${escapeHtml(plainDictionaryMeaning(WordAheadDictionary.validMeaning(w.entry?.[2])?w.entry[2]:'뜻을 확인하는 중…'))}</small></div></div>`).join(''):'<div class="empty-state">추천할 낯선 단어가 없어요.</div>';
+  $('#preview-words').innerHTML=words.length?words.map(w=>`<div class="preview-word" role="listitem"><label class="known-toggle"><input type="checkbox" data-preview-known="${escapeHtml(w.word)}" aria-label="${escapeHtml(w.raw)} 알고 있는 단어로 표시"></label><div class="preview-word-content"><div class="preview-word-heading"><strong>${escapeHtml(w.raw)}</strong><button type="button" class="speak-button" data-pronounce="${escapeHtml(w.raw)}" aria-label="${escapeHtml(w.raw)} 발음 듣기">◖))</button></div><small data-definition="${escapeHtml(w.word)}">${escapeHtml(plainDictionaryMeaning(WordAheadDictionary.validMeaning(w.entry?.[2])?w.entry[2]:'저장된 뜻 확인 중…'))}</small></div></div>`).join(''):'<div class="empty-state">추천할 낯선 단어가 없어요.</div>';
   setView('preview');
   const request={};dialog.previewRequest=request;
   const active=()=>!dialog.hidden&&dialog.previewRequest===request;
-  const update=(w,entry)=>{
+  const update=(w,entry,state)=>{
     if(!active())return;
     const meaning=WordAheadDictionary.validMeaning(entry?.[2])?plainDictionaryMeaning(entry[2]):null;
     const target=dialog.querySelector(`[data-definition="${w.word}"]`);
-    if(target){target.textContent=meaning||WordAheadDictionary.failureMessage(w.raw,w.word);if(!meaning){const retry=document.createElement('button');retry.type='button';retry.className='dictionary-retry';retry.textContent='↻';retry.setAttribute('aria-label',w.raw+' 한글 뜻 다시 조회');retry.onclick=async()=>{retry.disabled=true;WordAheadDictionary.retry(w.raw,w.word);try{const result=await WordAheadDictionary.resolve(w.raw,w.word);update(w,result?.entry);}catch{update(w,null)}};target.append(retry);}}
+    if(target){target.textContent=meaning||(state==='queued'?'온라인 뜻 조회 대기':navigator.onLine===false?'오프라인 사전 미수록':'뜻 조회 실패 · 다시 시도');if(!meaning){const retry=document.createElement('button');retry.type='button';retry.className='dictionary-retry';retry.textContent='↻';retry.setAttribute('aria-label',w.raw+' 한글 뜻 다시 조회');retry.onclick=async()=>{retry.disabled=true;target.firstChild.textContent='뜻을 조회하는 중…';WordAheadDictionary.retry(w.raw,w.word);try{const result=await WordAheadDictionary.resolve(w.raw,w.word);update(w,result?.entry);}catch{update(w,null)}};target.append(retry);}}
     const record=saved.find(x=>x.word===w.word);
     if(meaning&&record){record.definition=meaning;record.phonetic=entry[0]||'';record.part=entry[1]||'';persist();}
   };
   async function pool(items,run){let cursor=0;await Promise.all(Array.from({length:Math.min(4,items.length)},async()=>{while(active()&&cursor<items.length){const w=items[cursor++];await run(w);}}));}
-  const pending=new Set(words);
-  const deadline=setTimeout(()=>{for(const w of pending)update(w,null);},12000);
+  const missing=[],localPending=new Set(words);
+  const localDeadline=setTimeout(()=>{for(const w of localPending)update(w,w.entry,'queued');},10000);
   try{
+    try{await WordAheadDictionary.prefetch(words);}catch{}
     await pool(words,async w=>{
       let timer;
       try{
-        const cached=WordAheadDictionary.cached(w.raw)||WordAheadDictionary.cached(w.word);
-        if(cached||WordAheadDictionary.validMeaning(w.entry?.[2])){update(w,cached?.entry||w.entry);return;}
-        const result=await Promise.race([WordAheadDictionary.resolve(w.raw,w.word),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('뜻 조회 시간 초과')),12000);})]);
-        update(w,result?.entry||w.entry);
-      }catch{update(w,w.entry);}finally{clearTimeout(timer);pending.delete(w);}
+        const result=await Promise.race([WordAheadDictionary.preferred(w.raw,w.word),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('내장 뜻 조회 지연')),10000);})]);
+        const entry=WordAheadDictionary.validMeaning(result?.entry?.[2])?result.entry:w.entry;
+        if(WordAheadDictionary.validMeaning(entry?.[2]))update(w,entry);
+        else{update(w,null,'queued');missing.push(w);}
+      }catch{update(w,null,'queued');missing.push(w);}finally{clearTimeout(timer);localPending.delete(w);}
     });
-  }finally{clearTimeout(deadline);}
+  }finally{clearTimeout(localDeadline);}
+  await pool(missing,async w=>{
+    let timer;
+    try{
+      const target=dialog.querySelector(`[data-definition="${w.word}"]`);
+      if(active()&&target)target.textContent='뜻을 조회하는 중…';
+      const result=await Promise.race([WordAheadDictionary.resolve(w.raw,w.word),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('뜻 조회 시간 초과')),12000);})]);
+      update(w,result?.entry||w.entry);
+    }catch{update(w,w.entry);}finally{clearTimeout(timer);}
+  });
+
 
 
 }
