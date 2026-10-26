@@ -67,10 +67,14 @@ function captionTurnSegments(source){
 }
 function captionBlockMeasure(video){
  if(typeof document==='undefined')return{fits:text=>text.length<=210,dispose(){}};
- const content=document.querySelector('#transcript-content');if(!content?.clientWidth)return{fits:text=>text.length<=210,dispose(){}};
- const probe=document.createElement('div');probe.setAttribute('aria-hidden','true');probe.style.cssText=`position:absolute;visibility:hidden;pointer-events:none;margin:0;width:${content.clientWidth}px;left:0;top:0`;
- content.append(probe);const lineHeight=parseFloat(getComputedStyle(content).lineHeight)||32;
- return{fits(text,start){probe.innerHTML=renderCaptionParagraph(video,{text,start,estimated:true});const block=probe.firstElementChild;block.classList.add('audio-active');block.style.margin='0';const rows=[];for(const node of block.querySelectorAll('.word-token,.caption-play'))for(const rect of node.getClientRects()){const center=rect.top+rect.height/2;if(!rows.some(y=>Math.abs(y-center)<lineHeight/2))rows.push(center);}return rows.length?rows.length<=5:block.getBoundingClientRect().height<=lineHeight*5;},dispose(){probe.remove();}};
+ const content=document.querySelector('#transcript-content'),width=content?.clientWidth;
+ if(!width)return{fits:text=>text.length<=210,dispose(){}};
+ const style=getComputedStyle(content),canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+ if(!context)return{fits:text=>text.length<=210,dispose(){}};
+ context.font=`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+ const widths=new Map(),measure=word=>{if(!widths.has(word))widths.set(word,context.measureText(word).width);return widths.get(word);};
+ const available=Math.max(1,width-9),space=measure(' ');
+ return{fits(text,start){let lines=1,used=Number.isFinite(start)?72:0;for(const word of text.split(/\s+/)){const size=measure(word),gap=used?space:0;if(used&&used+gap+size>available){lines++;used=0;}used+=(used?space:0)+size;if(used>available){const extra=Math.ceil(used/available)-1;lines+=extra;used-=extra*available;}if(lines>5)return false;}return true;},dispose(){widths.clear();}};
 }
 function captionSentences(video,withinLimit){
  const cues=captionTurnSegments(video.segments);
