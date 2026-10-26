@@ -118,3 +118,15 @@ button:disabled{cursor:default;opacity:.55}
 :root{--teal:#0d8579;--teal-dark:#08695f;--mint:#e7f4f0;--ink:#182b30;--muted:#63757b;--line:#dfe8e7}body{background:#f5f8f8}.primary-button{background:var(--teal);color:#fff}.stat-card:focus-visible{outline:3px solid #75bcaf;outline-offset:3px}
 body.library-open .topbar,body.library-open .footer{display:none}body.library-open .app-shell{max-width:800px;padding:0 18px}#library-view{min-height:100dvh}.library-page-header{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;min-height:76px;background:#f5f8f8;border-bottom:1px solid var(--line)}.library-page-header h1{margin:0;font-size:23px;color:var(--ink)}#library-view>.welcome-row,#library-view>.stats-row{display:none}#library-view>.vocabulary-backup{margin-bottom:18px}#library-view .word-list-card{margin-top:16px}.dark-mode .library-page-header{background:#14201e}.dark-mode .stat-card strong{color:#a5dfcc}.dark-mode .stat-card:active{background:#29483f}
 .language-select{display:block;width:100%;margin:6px 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);font:inherit}.settings-language-label{display:block;margin-top:4px;font-weight:600}
+
+/* Dictionary header and independently adjustable preview text. */
+.word-sheet{grid-template-areas:"handle" "word" "meaning" "retry";grid-template-rows:18px 30px minmax(0,1fr) auto;padding-left:20px;padding-right:20px}
+.word-sheet .sheet-word-row h2{flex:0 1 auto;min-width:0}
+.word-sheet .sheet-word-row .phonetic{flex:0 1 auto;max-width:35%;overflow-wrap:anywhere}
+.word-sheet .sheet-word-row .sheet-primary{width:26px;height:26px;font-size:18px;margin-left:auto;flex-shrink:0}
+.word-sheet .meaning{padding-left:8px;margin-top:5px}
+.preview-page .preview-word-heading strong{font-size:var(--preview-font-size,16px)}
+.preview-page .preview-word-content small{font-size:calc(var(--preview-font-size,16px) - 1px)}
+.preview-size-tools{margin:12px 0;gap:12px}
+.preview-size-tools button{width:36px;height:36px}
+#transcript-content{user-select:text;-webkit-user-select:text}

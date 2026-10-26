@@ -8,11 +8,10 @@ const WordAheadCaptions = {
     try {
       if(!await WordAheadBilling.beforeAnalysis(video)){WordAheadBilling.showLimit(video);return;}
       const data=await this.fetch(video.youtubeId);
-      if(activeVideo!==video||$('#reader-view').hidden)return;
       video.segments=captionTurnSegments(data.segments);video.text=video.segments.map(x=>x.text).join('\n');
       video.title=data.title;video.channel=data.channel;video.caption=true;
       video.meta=data.isGenerated?'영어(자동) 자막':'영어 자막';
-      persist();renderCards();openReader(video);
+      persist();renderCards();if(activeVideo===video&&!$('#reader-view').hidden)openReader(video);
     } catch(error) {
       if(activeVideo!==video||$('#reader-view').hidden)return;
       if(error.message.includes('무료 분석 한도')){WordAheadBilling.showLimit(video);return;}

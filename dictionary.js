@@ -13,8 +13,9 @@ const WordAheadDictionary = {
     if (!this.shards.has(id)) {
       if (!this.pending.has(id)) this.pending.set(id,new Promise((resolve,reject) => {
         const script=document.createElement('script');script.src=`dictionary/${id}.js?v=20261008`;
-        script.onload=()=>{resolve(this.shards.get(id));this.pending.delete(id);script.remove();};
-        script.onerror=()=>{this.pending.delete(id);script.remove();reject(new Error('내장 사전을 불러올 수 없습니다.'));};
+        const timer=setTimeout(()=>script.onerror(),10000);
+        script.onload=()=>{clearTimeout(timer);resolve(this.shards.get(id));this.pending.delete(id);script.remove();};
+        script.onerror=()=>{clearTimeout(timer);this.pending.delete(id);script.remove();reject(new Error('내장 사전을 불러올 수 없습니다.'));};
         document.head.append(script);
       }));
       const entries=await this.pending.get(id);return entries&&Object.hasOwn(entries,key)?entries[key]:null;
@@ -23,12 +24,13 @@ const WordAheadDictionary = {
   },
   async preferred(raw,key) {
     raw=raw.toLowerCase().replaceAll('’',"'");
+    const cached=this.cached(raw)||this.cached(key);if(cached)return cached;
     const exact=await this.lookup(raw);
-    if(exact?.[3]==='ko'&&this.validMeaning(exact[2]))return {entry:exact,word:raw};
+    if(exact?.[3]==='ko'&&this.validMeaning(exact[2]))return this.remember({entry:exact,word:raw});
     const stems=[];if(/ies$/.test(raw))stems.push(raw.slice(0,-3)+'y');if(/ied$/.test(raw))stems.push(raw.slice(0,-3)+'y');if(/(?:ing|ed)$/.test(raw)){const stem=raw.replace(/(?:ing|ed)$/,'');stems.push(stem,stem+'e',stem.replace(/(.)\1$/,'$1'));}if(raw.endsWith('s')&&!raw.endsWith('ss'))stems.push(raw.slice(0,-1),raw.slice(0,-2));
     const forms=new Set([key,...stems,...Array.from((exact?.[2]||'').matchAll(/(?:plural|participle|tense|comparative|superlative|form)[^.;]*?\bof\s+([A-Za-z]+(?:['-][A-Za-z]+)*)/g),x=>x[1].toLowerCase())]);
     let fallback=null;
-    for(const word of forms){if(word===raw)continue;const entry=await this.lookup(word);if(entry?.[3]==='ko'&&this.validMeaning(entry[2]))return {entry,word};if(entry&&!fallback)fallback={entry,word};}
+    for(const word of forms){if(word===raw)continue;const entry=await this.lookup(word);if(entry?.[3]==='ko'&&this.validMeaning(entry[2]))return this.remember({entry,word});if(entry&&!fallback)fallback={entry,word};}
     return exact?{entry:exact,word:raw}:fallback;
   },
   validMeaning(value){const text=String(value||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();return /[가-힣]/.test(text)&&!/(?:뜻풀이를?\s*추가|이\s*틀|rfdety|한국어 뜻풀이가 필요|사전Name|번역을 추가|정의가 필요|뜻을 확인하는|불러오는 중|사전에서 뜻)/i.test(text);},
