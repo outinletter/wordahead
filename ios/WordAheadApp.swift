@@ -369,44 +369,38 @@ enum CaptionFetcher {
 
 // Dictionary data survives app upgrades and is excluded from iCloud backup.
 actor OfflineDictionaryStore {
-    private var downloading = false
-    private var coreEntries: [String:Any]?
-    private var shardEntries: [String:[String:Any]] = [:]
-    private var cachedManifest: Manifest?
-    private struct Manifest: Decodable {
-        struct Shard: Decodable {let sha256: String; let bytes: Int}
-        let version: String; let source: String; let shards: [String:Shard]
+    private var coreEntries:[String:Any]?
+    private var supplementEntries:[String:Any]?
+    private var storedManifest:Manifest?
+    private struct Manifest:Decodable {
+        struct FileInfo:Decodable {let sha256:String;let bytes:Int}
+        let version:String;let entries:Int;let files:[String:FileInfo]
     }
-    private func manifest() throws -> Manifest {
-        if let cachedManifest {return cachedManifest}
-        let url = Bundle.main.url(forResource:"offline-manifest",withExtension:"json",subdirectory:"Web/dictionary")!
-        let result = try JSONDecoder().decode(Manifest.self,from:Data(contentsOf:url)); cachedManifest = result; return result
-    }
-    private func directory() throws -> URL {
-        var url = try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent("OfflineDictionary",isDirectory:true)
-        try FileManager.default.createDirectory(at:url,withIntermediateDirectories:true)
-        var values = URLResourceValues(); values.isExcludedFromBackup = true; try url.setResourceValues(values)
-        return url
-    }
-    private func localEntry(_ key:String, manifest:Manifest, root:URL) throws -> Any? {
-        let hash = Array(SHA256.hash(data:Data(key.utf8)))[0]
-        let shard = String(format:"%02x",hash)
-        if let info = manifest.shards[shard] {
-            let url = root.appendingPathComponent(info.sha256+".json")
-            if let entries = shardEntries[shard], let entry = entries[key] {return entry}
-            if shardEntries[shard] == nil, let data = try? Data(contentsOf:url), let entries = try JSONSerialization.jsonObject(with:data) as? [String:Any] {
-                if shardEntries.count >= 8 {shardEntries.removeAll()}
-                shardEntries[shard] = entries
-                if let entry = entries[key] {return entry}
+    private func loadEntries() throws {
+        guard coreEntries == nil else{return}
+        guard let root=Bundle.main.url(forResource:"Web",withExtension:nil) else {throw URLError(.fileDoesNotExist)}
+        let directory=root.appendingPathComponent("dictionary")
+        let manifest=try JSONDecoder().decode(Manifest.self,from:Data(contentsOf:directory.appendingPathComponent("offline-manifest.json")))
+        func read(_ name:String) throws -> [String:Any] {
+            let data=try Data(contentsOf:directory.appendingPathComponent(name))
+            guard let info=manifest.files[name],data.count==info.bytes,
+                  SHA256.hash(data:data).map({String(format:"%02x",$0)}).joined()==info.sha256,
+                  let entries=try JSONSerialization.jsonObject(with:data) as? [String:Any] else {throw URLError(.cannotParseResponse)}
+            return entries
+        }
+        let core=try read("core-ko.json"),supplement=try read("kengdic-ko.json")
+        guard Set(core.keys).union(supplement.keys).count==manifest.entries else {throw URLError(.cannotParseResponse)}
+        coreEntries=core;supplementEntries=supplement;storedManifest=manifest
+        // Remove only generated legacy shard caches after both bundled dictionaries verify.
+        if let support=FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask).first {
+            let legacy=support.appendingPathComponent("OfflineDictionary",isDirectory:true)
+            for file in (try? FileManager.default.contentsOfDirectory(at:legacy,includingPropertiesForKeys:nil)) ?? [] {
+                if file.lastPathComponent.range(of:"^[0-9a-f]{64}\\.json$",options:.regularExpression) != nil {try? FileManager.default.removeItem(at:file)}
             }
         }
-        if coreEntries == nil {
-            let coreURL = Bundle.main.url(forResource:"core-ko",withExtension:"json",subdirectory:"Web/dictionary")!
-            coreEntries = try JSONSerialization.jsonObject(with:Data(contentsOf:coreURL)) as? [String:Any]
-        }
-        return coreEntries?[key]
     }
-    func handle(_ request: [String:String]) async throws -> [String:Any] {
+    private func localEntry(_ key:String) -> Any? {coreEntries?[key] ?? supplementEntries?[key]}
+    func handle(_ request:[String:String]) async throws -> [String:Any] {
         if request["action"] == "online" {
             guard let address=request["url"],address.count<=4000,let url=URL(string:address),url.scheme=="https",
                   (url.host=="ko.wiktionary.org" && url.path=="/w/api.php") || (url.host=="api.mymemory.translated.net" && url.path=="/get") else {throw URLError(.badURL)}
@@ -415,43 +409,16 @@ actor OfflineDictionaryStore {
             guard let status=(response as? HTTPURLResponse)?.statusCode,(200..<300).contains(status),data.count<3_000_000,let text=String(data:data,encoding:.utf8) else {throw URLError(.badServerResponse)}
             return ["json":text]
         }
-        let manifest = try manifest(), root = try directory()
-        if request["action"] == "lookup" {
-            return ["entry":try localEntry(request["word"] ?? "",manifest:manifest,root:root) ?? NSNull()]
-        }
+        try loadEntries()
+        if request["action"] == "lookup" {return ["entry":localEntry(request["word"] ?? "") ?? NSNull()]}
         if request["action"] == "lookupMany" {
             guard let data=request["words"]?.data(using:.utf8),let words=try JSONSerialization.jsonObject(with:data) as? [String],words.count<=12000,words.allSatisfy({$0.count<=100}) else {throw URLError(.badURL)}
-            let grouped=Dictionary(grouping:Set(words)) { String(format:"%02x",Array(SHA256.hash(data:Data($0.utf8)))[0]) }
             var entries:[String:Any]=[:]
-            for shard in grouped.keys.sorted() {
-                for key in grouped[shard] ?? [] {entries[key]=try localEntry(key,manifest:manifest,root:root) ?? NSNull()}
-            }
+            for key in Set(words) {entries[key]=localEntry(key) ?? NSNull()}
             return ["entries":entries]
         }
-        if request["action"] == "download" {
-            guard !downloading else {return ["busy":true]}
-            downloading = true; defer {downloading = false}
-            let config = URLSessionConfiguration.ephemeral
-            config.allowsCellularAccess = false; config.allowsExpensiveNetworkAccess = false; config.allowsConstrainedNetworkAccess = false
-            config.timeoutIntervalForRequest = 30
-            let session = URLSession(configuration:config); defer {session.invalidateAndCancel()}
-            for (shard,info) in manifest.shards.sorted(by:{$0.key < $1.key}) {
-                let destination = root.appendingPathComponent(info.sha256+".json")
-                if FileManager.default.fileExists(atPath:destination.path) {continue}
-                guard let url = URL(string:manifest.source+shard+".js") else {throw URLError(.badURL)}
-                let (data,response) = try await session.data(from:url)
-                guard (response as? HTTPURLResponse)?.statusCode == 200, data.count == info.bytes,
-                      SHA256.hash(data:data).map({String(format:"%02x",$0)}).joined() == info.sha256,
-                      let text = String(data:data,encoding:.utf8), let start = text.firstIndex(of:"{"), let end = text.lastIndex(of:"}") else {throw URLError(.cannotParseResponse)}
-                let json = Data(text[start...end].utf8)
-                _ = try JSONSerialization.jsonObject(with:json)
-                try json.write(to:destination,options:.atomic)
-            }
-            let keep = Set(manifest.shards.values.map{$0.sha256+".json"})
-            for file in try FileManager.default.contentsOfDirectory(at:root,includingPropertiesForKeys:nil) where !keep.contains(file.lastPathComponent) {try? FileManager.default.removeItem(at:file)}
-        }
-        let count = manifest.shards.values.filter{FileManager.default.fileExists(atPath:root.appendingPathComponent($0.sha256+".json").path)}.count
-        return ["complete":count == manifest.shards.count,"downloaded":count,"total":manifest.shards.count,"bytes":manifest.shards.values.reduce(0){$0+$1.bytes}]
+        guard let manifest=storedManifest else {throw URLError(.cannotParseResponse)}
+        return ["complete":true,"builtIn":true,"downloaded":0,"total":0,"entries":manifest.entries,"bytes":manifest.files.values.reduce(0){$0+$1.bytes}]
     }
 }
 

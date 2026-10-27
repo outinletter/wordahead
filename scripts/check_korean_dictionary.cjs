@@ -1,0 +1,9 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert'),crypto=require('crypto');
+const core=JSON.parse(fs.readFileSync('dictionary/core-ko.json')),extra=JSON.parse(fs.readFileSync('dictionary/kengdic-ko.json')),manifest=JSON.parse(fs.readFileSync('dictionary/offline-manifest.json'));
+assert.equal(Object.keys(core).length+Object.keys(extra).length,manifest.entries);
+for(const [word,entry] of Object.entries({...extra,...core})){assert.equal(entry[3],'ko',word);assert(/[가-힣]/.test(entry[2]),word);}
+for(const word of Object.keys(extra))assert(!Object.hasOwn(core,word),'Core meanings must take priority');
+assert(!Object.hasOwn(extra,'uptime'));assert.equal(extra.addiction[2],'중독');
+for(const [file,info] of Object.entries(manifest.files)){const data=fs.readFileSync('dictionary/'+file);assert.equal(data.length,info.bytes);assert.equal(crypto.createHash('sha256').update(data).digest('hex'),info.sha256);}
+const context={document:{querySelector:()=>null},window:{},navigator:{onLine:false},localStorage:{getItem:()=>null},AbortSignal,fetch:async url=>({ok:true,json:async()=>url.includes('kengdic-ko')?extra:core})};vm.createContext(context);vm.runInContext(fs.readFileSync('dictionary.js','utf8')+';globalThis.dictionary=WordAheadDictionary',context);
+(async()=>{const d=context.dictionary;assert.equal((await d.lookup('turkey'))[2],core.turkey[2]);assert.equal((await d.lookup('addiction'))[2],'중독');assert.equal(await d.lookup('nonexistentword'),null);assert.equal(Object.keys(await d.loadBundled()).length,manifest.entries);assert(manifest.entries>49000);assert(Object.values(manifest.files).reduce((n,x)=>n+x.bytes,0)<4000000);console.log('PASS: Korean-only offline data, priority, checksums, independent sources, web lookup and size');})().catch(e=>{console.error(e);process.exitCode=1});

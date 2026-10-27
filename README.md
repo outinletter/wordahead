@@ -20,3 +20,17 @@ YouTube 자막 요청은 비공개 player 엔드포인트에 의존하므로 접
 사전 출처와 CC BY-SA 4.0 안내는 dictionary/NOTICE.md에 있습니다. 제3자 영상·자막에 대한 권한을 증명하는 문서는 저장소에서 확인되지 않았습니다. 공개 접근 가능 여부는 사용 허가 증명이 아닙니다.
 
 심사 대응 문서는 docs/app-review에 있습니다. 실제 제출 빌드의 물리 기기 검증과 영상 촬영, App Store Connect 입력은 개발자가 완료해야 합니다. 소스 수정은 기존 제출 바이너리에 자동 반영되지 않습니다.
+
+## Korean-only offline dictionary
+The app bundles 49,527 Korean-meaning headwords (15,265 Wiktionary core entries
+and 34,262 Kengdic additions), about 3.45 MB of JSON data. Existing valid
+Wiktionary entries take priority. Kengdic is kept in a separate MPL 2.0 data
+file; see dictionary/NOTICE.md and dictionary/MPL-2.0.txt. Filtering is automated,
+not full manual translation verification.
+
+Rebuild with `python3 scripts/package_offline_dictionary.py /path/to/kengdic.tsv`
+using the pinned Kengdic revision in NOTICE.md. `import_dictionary.py` and legacy
+shards are source archives for historical rebuild/filter tooling; they are not
+bundled, fetched or required by the current app. No dictionary download is needed.
+The native loader verifies both bundled files before deleting generated legacy
+English shard caches. User vocabulary and lookup caches are preserved.

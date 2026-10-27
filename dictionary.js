@@ -6,29 +6,24 @@ const WordAheadDictionary = {
   native(action,extra={}){return new Promise((resolve,reject)=>{const id=crypto.randomUUID(),timer=setTimeout(()=>{this.nativeRequests.delete(id);reject(new Error('사전 응답이 지연됩니다. 다시 시도해주세요.'));},action==='download'?45*60*1000:action==='online'?15000:10000);this.nativeRequests.set(id,{resolve,reject,timer});try{window.webkit.messageHandlers.dictionaryStore.postMessage({id,action,...extra});}catch(error){clearTimeout(timer);this.nativeRequests.delete(id);reject(error);}});},
   localEntries:new Map(),
   async prefetch(words){
-    if(!window.webkit?.messageHandlers?.dictionaryStore)return;
+    if(!window.webkit?.messageHandlers?.dictionaryStore){await this.loadBundled();return;}
     const keys=[...new Set(words.flatMap(w=>[w.raw.toLowerCase(),w.word]))];
     const result=await this.native('lookupMany',{words:JSON.stringify(keys)});
     this.localEntries=new Map(Object.entries(result.entries||{}));
   },
+  bundled:null,
+  async loadBundled(){
+    if(!this.bundled)this.bundled=Promise.all(['kengdic-ko.json','core-ko.json'].map(async name=>{
+      const response=await fetch(`dictionary/${name}?v=korean-20261027`,{signal:AbortSignal.timeout(10000)});
+      if(!response.ok)throw new Error('내장 영한 사전을 불러올 수 없습니다.');return response.json();
+    })).then(([supplement,core])=>({...supplement,...core})).catch(error=>{this.bundled=null;throw error;});
+    return this.bundled;
+  },
   async lookup(word) {
-    if(this.localEntries.has(word.toLowerCase()))return this.localEntries.get(word.toLowerCase());
-    if(window.webkit?.messageHandlers?.dictionaryStore){const result=await this.native('lookup',{word:word.toLowerCase()});return result.entry;}
-
-    const key = word.toLowerCase();
-    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key)));
-    const id = hash[0].toString(16).padStart(2,'0');
-    if (!this.shards.has(id)) {
-      if (!this.pending.has(id)) this.pending.set(id,new Promise((resolve,reject) => {
-        const script=document.createElement('script');script.src=`dictionary/${id}.js?v=20261008`;
-        const timer=setTimeout(()=>script.onerror(),10000);
-        script.onload=()=>{clearTimeout(timer);resolve(this.shards.get(id));this.pending.delete(id);script.remove();};
-        script.onerror=()=>{clearTimeout(timer);this.pending.delete(id);script.remove();reject(new Error('내장 사전을 불러올 수 없습니다.'));};
-        document.head.append(script);
-      }));
-      const entries=await this.pending.get(id);return entries&&Object.hasOwn(entries,key)?entries[key]:null;
-    }
-    const entries=this.shards.get(id);return Object.hasOwn(entries,key)?entries[key]:null;
+    const key=word.toLowerCase();
+    if(this.localEntries.has(key))return this.localEntries.get(key);
+    if(window.webkit?.messageHandlers?.dictionaryStore){const result=await this.native('lookup',{word:key});return result.entry;}
+    const entries=await this.loadBundled();return Object.hasOwn(entries,key)?entries[key]:null;
   },
   async preferred(raw,key) {
     raw=raw.toLowerCase().replaceAll('’',"'");
@@ -129,27 +124,10 @@ const WordAheadDictionary = {
 
 async function refreshOfflineDictionary(){
  const button=document.querySelector('#download-dictionary'),status=document.querySelector('#dictionary-status');
- if(!button)return;
- if(!window.webkit?.messageHandlers?.dictionaryStore){button.hidden=true;status.textContent='확장 사전 다운로드는 iPhone 앱에서 지원합니다.';return;}
- try{const state=await WordAheadDictionary.native('status');button.disabled=state.complete;button.textContent=state.complete?'확장 사전 최신 상태':'확장 사전 다운로드 · Wi-Fi';status.textContent=state.complete?'확장 사전 저장 완료 · 앱 업데이트 후에도 유지됩니다.':`기본 영한 사전 사용 중 · 확장 사전 ${state.downloaded}/${state.total}개 저장됨 (전체 약 ${Math.ceil(state.bytes/1000000)}MB)`;}catch{status.textContent='사전 상태를 확인하지 못했습니다.';}
+ if(!status)return;if(button)button.hidden=true;
+ try{
+   const count=window.webkit?.messageHandlers?.dictionaryStore?(await WordAheadDictionary.native('status')).entries:Object.keys(await WordAheadDictionary.loadBundled()).length;
+   status.textContent=`내장 영한 사전 ${count.toLocaleString()}개 · 오프라인 사용 가능`;
+ }catch{status.textContent='내장 영한 사전을 불러오지 못했습니다. 앱을 다시 열어주세요.';}
 }
-async function downloadOfflineDictionary(){
- const button=document.querySelector('#download-dictionary'),status=document.querySelector('#dictionary-status');
- button.disabled=true;status.textContent='Wi-Fi로 다운로드 중입니다. 앱을 열어두세요. 중단되면 다음에 이어받습니다.';
- try{const result=await WordAheadDictionary.native('download');await refreshOfflineDictionary();if(result.busy)status.textContent='사전을 이미 저장 중입니다. 잠시 후 다시 확인해주세요.';return result.complete===true;}catch(error){button.disabled=false;status.textContent=error.message;return false;}
-}
-document.querySelector('#download-dictionary')?.addEventListener('click',downloadOfflineDictionary);
-async function offerOfflineDictionary(){
- const dialog=document.querySelector('#offline-offer');if(!dialog||!window.webkit?.messageHandlers?.dictionaryStore||localStorage.getItem('wa-offline-offer')||document.querySelector('dialog[open]'))return;
- try{const state=await WordAheadDictionary.native('status');if(state.complete){localStorage.setItem('wa-offline-offer','complete');return;}
- document.querySelector('#offline-offer-description').textContent=`Wi-Fi에서 확장 영한 사전 약 ${Math.ceil(state.bytes/1000000)}MB를 저장할까요? 인터넷 없이 더 많은 단어 뜻을 볼 수 있고 앱 업데이트 후에도 유지됩니다. 나중에 환경설정에서도 저장할 수 있습니다.`;
- if(localStorage.getItem('wa-offline-offer')||document.querySelector('dialog[open]'))return;dialog.showModal();localStorage.setItem('wa-offline-offer','asked');}catch{}
-}
-document.querySelector('#offline-later')?.addEventListener('click',()=>document.querySelector('#offline-offer').close());
-document.querySelector('#offline-save')?.addEventListener('click',async()=>{
- const button=document.querySelector('#offline-save'),status=document.querySelector('#offline-offer-status');button.disabled=true;document.querySelector('#offline-later').textContent='닫기';status.textContent='Wi-Fi로 저장 중입니다. 앱을 열어두세요.';
- const complete=await downloadOfflineDictionary();status.textContent=complete?'오프라인 사전을 저장했습니다.':document.querySelector('#dictionary-status').textContent;button.disabled=complete;button.textContent=complete?'저장 완료':'다시 저장';if(complete){localStorage.setItem('wa-offline-offer','complete');const dialog=document.querySelector('#offline-offer');if(dialog.open)dialog.close();}
-});
 refreshOfflineDictionary();
-document.addEventListener('DOMContentLoaded',offerOfflineDictionary,{once:true});
-document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('close',offerOfflineDictionary));
