@@ -2,7 +2,7 @@
 set -euo pipefail
 repo_dir="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_dir"
-export DEVELOPER_DIR=/Applications/Xcode-Internal.app/Contents/Developer
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-Internal.app/Contents/Developer}"
 test -x "$DEVELOPER_DIR/usr/bin/xcodebuild"
 python3 - <<'CHECK_VOLUME'
 import plistlib, subprocess
@@ -30,11 +30,14 @@ case "${1:-archive}" in
     python3 - "$app_path/Web" <<'PY'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
-refs = re.findall(r'<script[^>]+src=["\']([^"\']+)', (root / 'index.html').read_text())
+refs = re.findall(r'<script[^>]+src=["\']([^"\']+)', (root / 'youtube-player.html').read_text())
 missing = [ref for ref in refs if '://' not in ref and not (root / ref.split('?')[0]).is_file()]
 if missing:
     raise SystemExit('Missing bundled scripts: ' + ', '.join(missing))
-print('Verified all bundled scripts, including localization module.')
+required = ['youtube-player.html', 'dictionary/core-ko.json', 'dictionary/kengdic-ko.json', 'dictionary/offline-manifest.json', 'dictionary/NOTICE.md', 'dictionary/MPL-2.0.txt']
+assert all((root / file).is_file() for file in required), 'Missing native app resources'
+assert not (root / 'index.html').exists(), 'Legacy web UI must not ship in native app'
+print('Verified SwiftUI app resources, player scripts and offline dictionary.')
 PY
     ;;
   upload)
@@ -45,7 +48,7 @@ PY
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>destination</key><string>upload</string><key>signingStyle</key><string>automatic</string><key>teamID</key><string>A7QB8PT33N</string><key>manageAppVersionAndBuildNumber</key><false/></dict></plist>
 PLIST
-    xcodebuild -exportArchive -archivePath "$archive_path" -exportOptionsPlist "$options_file" -exportPath "/Volumes/XcodeBuild/WordAhead-build${build_number}-export"
+    xcodebuild -exportArchive -archivePath "$archive_path" -exportOptionsPlist "$options_file" -exportPath "/Volumes/XcodeBuild/WordAhead-build${build_number}-export" -allowProvisioningUpdates
     ;;
   install)
     device_id="${2:?Pass the connected iPhone identifier from preflight}"

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>WordAhead YouTube Player</title>
-<style>*{box-sizing:border-box}html,body{margin:0;height:100%;background:#111;color:#eee;font:12px/1.4 system-ui}body{display:grid;grid-template-rows:minmax(200px,1fr) auto}#player{width:100%;height:100%;min-height:200px}#status{padding:6px 8px;background:#182222;display:flex;gap:8px;align-items:center}#message{flex:1}a{color:#a5dfcc;white-space:nowrap}</style></head><body>
+<style>*{box-sizing:border-box}html,body{margin:0;height:100%;background:#111;color:#eee;font:12px/1.4 system-ui}body{display:grid;grid-template-rows:minmax(200px,1fr) auto}#player{width:100%;height:100%;min-height:200px}#status{padding:6px 8px;background:#182222;display:flex;gap:8px;align-items:center}#message{flex:1}a{color:#a5dfcc;white-space:nowrap}.ytp-fade-out,.ytp-gradient-top,.ytp-gradient-bottom,.ytp-pause-overlay{display:none!important;opacity:0!important;transition:none!important}</style></head><body>
 <div id="player"></div>
 <script>
 (() => {
@@ -8,7 +8,7 @@
   const message=document.querySelector('#message'),external=document.querySelector('#external');
   function status(text){if(message)message.textContent=text;}
   function reconcileRate(){if(Date.now()<resumeUntil&&player.getPlaybackRate()!==playbackRate){restoringRate=playbackRate;player.setPlaybackRate(playbackRate);}}
-  function publishTime(){if(!ready||suspended)return;reconcileRate();const state=player.getPlayerState();if(![YT.PlayerState.PLAYING,2,5].includes(state))return;const actual=player.getVideoData?.().video_id;if(actual&&currentId&&actual!==currentId)return;const payload={type:'wordahead-player-time',videoId:currentId,time:player.getCurrentTime(),rate:playbackRate};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
+  function publishTime(){if(!ready||suspended)return;reconcileRate();const state=player.getPlayerState();if(![YT.PlayerState.PLAYING,2,5].includes(state))return;const actual=player.getVideoData?.().video_id;if(actual&&currentId&&actual!==currentId)return;const playing=(state===YT.PlayerState.PLAYING);const payload={type:'wordahead-player-time',videoId:currentId,time:player.getCurrentTime(),rate:playbackRate,state,playing};if(window.parent!==window)window.parent.postMessage(payload,location.origin);try{window.webkit?.messageHandlers?.youtubeState?.postMessage(payload)}catch{}}
   function captureSettings(){
     if(!ready)return settings;
     settings={...settings,rate:playbackRate};
@@ -29,7 +29,8 @@
     const command=pending;pending=null;
     if(command.rate)playbackRate=command.rate;
     if(command.action==='rate'){if(ready)player.setPlaybackRate(playbackRate);return;}
-    if(command.action==='pause'){player.pauseVideo();return;}
+    if(command.action==='pause'){if(ready)player.pauseVideo();return;}
+    if(command.action==='play'){if(ready)player.playVideo();return;}
     const start=command.start||0;
     if(external)external.href=`https://www.youtube.com/watch?v=${command.videoId}&t=${Math.floor(start)}s`;
     if(currentId!==command.videoId){
@@ -44,6 +45,10 @@
   window.WordAheadYouTube={
     load(command){
       if(command.action==='rate'){this.setRate(command.rate);return;}
+      if(command.action==='play'){
+        if(pending)pending={...pending,play:true};
+        if(ready)player.playVideo();return;
+      }
       if(command.action==='pause'){
         if(pending)pending={...pending,play:false};
         if(ready)player.pauseVideo();return;
