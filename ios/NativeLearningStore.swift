@@ -226,16 +226,19 @@ final class NativeLearningStore: ObservableObject {
         speaker.speak(utterance)
     }
     static func key(_ raw: String) -> String { raw.lowercased().trimmingCharacters(in: CharacterSet.letters.inverted) }
+    nonisolated static var language: String { UserDefaults.standard.string(forKey: "nativeAppLanguage") ?? "ko" }
+    nonisolated static var meaningCacheKey: String { language == "ko" ? "wa-korean-meanings" : "wa-meanings-" + language }
     nonisolated static func isMeaning(_ value: String) -> Bool {
-        value.range(of: "[가-힣]", options: .regularExpression) != nil && !["한글 뜻을 찾지 못", "뜻을 확인하는 중", "사전에서 뜻을 찾는 중", "저장된 뜻 확인 중", "오프라인 사전 미수록", "뜻을 조회하는 중"].contains(where: value.contains)
+        let hangul = value.range(of: "[가-힣]", options: .regularExpression) != nil
+        return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (language == "ko" ? hangul : !hangul) && !["한글 뜻을 찾지 못", "뜻을 확인하는 중", "사전에서 뜻을 찾는 중", "저장된 뜻 확인 중", "오프라인 사전 미수록", "뜻을 조회하는 중"].contains(where: value.contains)
     }
     func quickMeaning(_ raw: String) -> WordMeaning? {
         let key = Self.key(raw)
-        if let cached = meaningCache[key] { return cached }
+        if let cached = meaningCache[Self.language + ":" + key] { return cached }
         if let entry = words.first(where: { $0.id == key && Self.isMeaning($0.definition) }) {
             return WordMeaning(id: key, phonetic: entry.data["phonetic"] as? String ?? "", part: entry.data["part"] as? String ?? "", definition: entry.definition)
         }
-        if let cached = document["wa-korean-meanings"] as? [String: Any], let entry = cached[key] as? [String], entry.count > 2, Self.isMeaning(entry[2]) {
+        if let cached = document[Self.meaningCacheKey] as? [String: Any], let entry = cached[key] as? [String], entry.count > 2, Self.isMeaning(entry[2]) {
             return WordMeaning(id: key, phonetic: entry[0], part: entry[1], definition: entry[2])
         }
         return nil
@@ -247,12 +250,21 @@ final class NativeLearningStore: ObservableObject {
             var profile = profiles[key] ?? [:]; profile["lookups"] = (profile["lookups"] as? Int ?? 0) + 1; profiles[key] = profile
             document["wa-profile"] = profiles
         }
-        if let cached = meaningCache[key] { return cached }
+        if let cached = meaningCache[Self.language + ":" + key] { return cached }
         if let entry = words.first(where: { $0.id == key && Self.isMeaning($0.definition) }) {
             return WordMeaning(id: key, phonetic: entry.data["phonetic"] as? String ?? "", part: entry.data["part"] as? String ?? "", definition: entry.definition)
         }
-        if let cached = document["wa-korean-meanings"] as? [String: Any], let entry = cached[key] as? [String], entry.count > 2, Self.isMeaning(entry[2]) {
+        if let cached = document[Self.meaningCacheKey] as? [String: Any], let entry = cached[key] as? [String], entry.count > 2, Self.isMeaning(entry[2]) {
             return WordMeaning(id: key, phonetic: entry[0], part: entry[1], definition: entry[2])
+        }
+        if Self.language != "ko" {
+            var phonetic = "", part = ""
+            if let response = try? await dictionary.handle(["action": "lookup", "word": key]), let entry = response["entry"] as? [String], entry.count > 1 { phonetic = entry[0]; part = entry[1] }
+            guard online, let translated = await onlineMeaning(key, language: Self.language), Self.isMeaning(translated.definition) else { return WordMeaning(id: key) }
+            let result = WordMeaning(id: key, phonetic: phonetic.isEmpty ? translated.phonetic : phonetic, part: part.isEmpty ? translated.part : part, definition: translated.definition)
+            meaningCache[Self.language + ":" + key] = result
+            var cache = document[Self.meaningCacheKey] as? [String: Any] ?? [:]
+            cache[key] = [result.phonetic, result.part, result.definition]; document[Self.meaningCacheKey] = cache; persist(); return result
         }
         var candidates = [key]
         if key.hasSuffix("ies") { candidates.append(String(key.dropLast(3)) + "y") }
@@ -262,19 +274,36 @@ final class NativeLearningStore: ObservableObject {
         }
         for candidate in candidates {
             if let response = try? await dictionary.handle(["action": "lookup", "word": candidate]), let entry = response["entry"] as? [String], entry.count > 2, Self.isMeaning(entry[2]) {
-                let result = WordMeaning(id: key, phonetic: entry[0], part: entry[1], definition: entry[2]); meaningCache[key] = result; return result
+                let result = WordMeaning(id: key, phonetic: entry[0], part: entry[1], definition: entry[2]); meaningCache[Self.language + ":" + key] = result; return result
             }
         }
         if online, let url = URL(string: "https://api.mymemory.translated.net/get") {
             var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
             components.queryItems = [URLQueryItem(name: "q", value: key), URLQueryItem(name: "langpair", value: "en|ko")]
             if let response = try? await dictionary.handle(["action": "online", "url": components.url!.absoluteString]), let text = response["json"] as? String, let data = text.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let body = object["responseData"] as? [String: Any], let translated = body["translatedText"] as? String, Self.isMeaning(translated) {
-                let result = WordMeaning(id: key, definition: translated); meaningCache[key] = result
-                var cache = document["wa-korean-meanings"] as? [String: Any] ?? [:]
-                cache[key] = ["", "", translated]; document["wa-korean-meanings"] = cache; persist(); return result
+                let result = WordMeaning(id: key, definition: translated); meaningCache[Self.language + ":" + key] = result
+                var cache = document[Self.meaningCacheKey] as? [String: Any] ?? [:]
+                cache[key] = ["", "", translated]; document[Self.meaningCacheKey] = cache; persist(); return result
             }
         }
         return WordMeaning(id: key)
+    }
+    private func onlineMeaning(_ word: String, language: String) async -> WordMeaning? {
+        if language == "en" {
+            guard let url = URL(string: "https://api.dictionaryapi.dev/v2/entries/en/" + (word.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? word)),
+                  let response = try? await dictionary.handle(["action": "online", "url": url.absoluteString]), let text = response["json"] as? String, let data = text.data(using: .utf8),
+                  let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]], let first = entries.first else { return nil }
+            let meanings = first["meanings"] as? [[String: Any]] ?? []
+            let definitions = meanings.prefix(3).compactMap { ($0["definitions"] as? [[String: Any]])?.first?["definition"] as? String }
+            let part = (meanings.first?["partOfSpeech"] as? String) ?? ""
+            return definitions.isEmpty ? nil : WordMeaning(id: word, phonetic: first["phonetic"] as? String ?? "", part: part.uppercased(), definition: definitions.joined(separator: "; "))
+        }
+        let codes = ["zh-Hans": "zh-CN", "es-MX": "es", "fr-FR": "fr"]
+        guard var components = URLComponents(string: "https://api.mymemory.translated.net/get") else { return nil }
+        components.queryItems = [URLQueryItem(name: "q", value: word), URLQueryItem(name: "langpair", value: "en|" + (codes[language] ?? language))]
+        guard let address = components.url?.absoluteString, let response = try? await dictionary.handle(["action": "online", "url": address]), let text = response["json"] as? String, let data = text.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let body = object["responseData"] as? [String: Any], let translated = body["translatedText"] as? String else { return nil }
+        return WordMeaning(id: word, definition: translated)
     }
     func previewWords(_ video: LearningVideo) -> [String] {
         let tokens = video.text.lowercased().replacingOccurrences(of: "’", with: "'").components(separatedBy: CharacterSet.letters.union(CharacterSet(charactersIn: "'-")).inverted).map(Self.key).filter { $0.count > 2 }

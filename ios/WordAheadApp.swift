@@ -8,7 +8,16 @@ import StoreKit
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
     private let store = NativeLearningStore()
+    private static func supportedLanguage() -> String {
+        let code = Locale.preferredLanguages.first ?? "ko"
+        for (prefix, value) in [("ko", "ko"), ("de", "de"), ("ja", "ja"), ("zh", "zh-Hans"), ("es", "es-MX"), ("fr", "fr-FR"), ("it", "it"), ("pt", "pt-BR"), ("ru", "ru"), ("nl", "nl"), ("th", "th")] where code.hasPrefix(prefix) { return value }
+        return "en"
+    }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let defaults = UserDefaults.standard
+        if !["ko", "en", "de", "ja", "zh-Hans", "es-MX", "fr-FR", "it", "pt-BR", "ru", "nl", "th"].contains(defaults.string(forKey: "nativeAppLanguage") ?? "") {
+            defaults.set(Self.supportedLanguage(), forKey: "nativeAppLanguage")
+        }
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = UIHostingController(rootView: NativeAppearanceView(store: store))
         window.makeKeyAndVisible(); self.window = window
@@ -128,7 +137,7 @@ actor OfflineDictionaryStore {
     func handle(_ request:[String:String]) async throws -> [String:Any] {
         if request["action"] == "online" {
             guard let address=request["url"],address.count<=4000,let url=URL(string:address),url.scheme=="https",
-                  (url.host=="ko.wiktionary.org" && url.path=="/w/api.php") || (url.host=="api.mymemory.translated.net" && url.path=="/get") else {throw URLError(.badURL)}
+                  (url.host=="ko.wiktionary.org" && url.path=="/w/api.php") || (url.host=="api.dictionaryapi.dev" && url.path.hasPrefix("/v2/entries/en/")) || (url.host=="api.mymemory.translated.net" && url.path=="/get") else {throw URLError(.badURL)}
             var query=URLRequest(url:url,timeoutInterval:12);query.setValue("WordAhead/1.1 (https://outinletter.github.io/wordahead/support.html)",forHTTPHeaderField:"User-Agent")
             let (data,response)=try await URLSession.shared.data(for:query)
             guard let status=(response as? HTTPURLResponse)?.statusCode,(200..<300).contains(status),data.count<3_000_000,let text=String(data:data,encoding:.utf8) else {throw URLError(.badServerResponse)}

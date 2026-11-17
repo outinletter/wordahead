@@ -102,7 +102,7 @@ struct NativeHomeView: View {
                 if store.videos.isEmpty { VStack(spacing: 10) { Image(systemName: "play.rectangle.on.rectangle").font(.wa(40)).foregroundStyle(WordAheadStyle.teal.opacity(0.7)); Text("영상이나 자막을 추가해 첫 학습을 시작하세요.").font(.subheadline).multilineTextAlignment(.center).foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 28).transition(.opacity) }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: hSize == .regular ? 2 : 1), spacing: 16) {
                 ForEach(store.videos) { video in
-                    NavigationLink { NativeReaderView(store: store, videoID: video.id).zoomTransition(id: video.id, in: zoom) } label: {
+                    NavigationLink { NativeReaderView(store: store, videoID: video.id) } label: {
                         VStack(alignment: .leading, spacing: 0) {
                             if let id = video.youtubeID, let url = URL(string: "https://i.ytimg.com/vi/\(id)/hqdefault.jpg") {
                                 AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Rectangle().fill(WordAheadStyle.teal.opacity(0.12)).modifier(Shimmer()).overlay(Image(systemName: "play.rectangle").font(.largeTitle)) }.frame(height: 180).clipped()
@@ -353,9 +353,6 @@ struct NativeReaderView: View {
                     }
                 )
                 .id(selected.id)
-                .highPriorityGesture(DragGesture(minimumDistance: 10).onEnded { value in
-                    if value.translation.height > 40 { withAnimation(.easeOut(duration: 0.2)) { self.selected = nil } }
-                })
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -469,14 +466,9 @@ struct NativeMeaningView: View {
     @State private var dragOffset: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
     private var definition: String { loading ? "사전에서 뜻을 찾는 중…" : meaning?.definition.isEmpty == false ? meaning!.definition : "오프라인 사전 미수록 · 다시 조회" }
-    private let height: Double = 101
+    private let height: Double = 80
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: close) { Capsule().fill(Color(red: 0.53, green: 0.59, blue: 0.57)).frame(width: 36, height: 4).frame(maxWidth: .infinity).frame(height: 12).contentShape(Rectangle()) }
-                .buttonStyle(.plain).accessibilityLabel(Text("사전 닫기"))
-                .gesture(DragGesture(minimumDistance: 20).onEnded { value in
-                    if value.translation.height > 50 { close() }
-                })
             HStack(spacing: 6) {
                 Text(word).font(.wa(20, .bold)).lineLimit(1).minimumScaleFactor(0.75).layoutPriority(1)
                 Text(meaning?.phonetic ?? "").font(.wa(12)).foregroundStyle(Color.white.opacity(0.7)).lineLimit(1).frame(maxWidth: width * 0.35, alignment: .leading)
@@ -484,10 +476,11 @@ struct NativeMeaningView: View {
                 Button { if let meaning { store.save(meaning, context: context, source: source) } } label: {
                     Image(systemName: store.words.contains { $0.id == word } ? "checkmark" : "plus").font(.wa(18, .medium)).foregroundStyle(Color(red: 0.12, green: 0.43, blue: 0.39)).frame(width: 26, height: 26).background(Color(red: 0.84, green: 0.94, blue: 0.90), in: RoundedRectangle(cornerRadius: 6))
                 }.disabled(meaning?.definition.isEmpty != false).accessibilityLabel(Text("단어 저장"))
-                if let part = meaning?.part, !part.isEmpty { Text(part).font(.wa(12, .semibold)).tracking(0.3).foregroundStyle(Color(red: 0.61, green: 0.76, blue: 0.71)).lineLimit(1).frame(maxWidth: 60) }
+                if let part = meaning?.part, !part.isEmpty { Text(part).font(.wa(12, .semibold)).tracking(0.3).foregroundStyle(Color(red: 0.61, green: 0.76, blue: 0.71)).lineLimit(1).frame(maxWidth: 44) }
                 Button {
                     if let onSpeak { onSpeak() } else { store.speak(word) }
                 } label: { Image(systemName: "speaker.wave.2.fill").font(.wa(12)).foregroundStyle(Color(red: 0.33, green: 0.42, blue: 0.44)).frame(width: 30, height: 30).background(Color(red: 0.96, green: 0.97, blue: 0.96), in: Circle()) }.accessibilityLabel(Text("발음 듣기"))
+                Button(action: close) { Image(systemName: "xmark").font(.wa(12, .bold)).foregroundStyle(Color(red: 0.33, green: 0.42, blue: 0.44)).frame(width: 30, height: 30).background(Color(red: 0.96, green: 0.97, blue: 0.96), in: Circle()) }.accessibilityLabel(Text("사전 닫기"))
             }.frame(height: 30)
             ScrollView {
                 Group {
@@ -500,7 +493,7 @@ struct NativeMeaningView: View {
                             .onTapGesture { Task { await lookup() } }
                     }
                 }
-            }.frame(height: height - 55, alignment: .top).padding(.top, 5)
+            }.frame(height: height - 43, alignment: .top).padding(.top, 5)
         }.buttonStyle(.plain).padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 4)
         .frame(height: height, alignment: .top).foregroundStyle(.white)
         .background(GeometryReader { geometry in Color.clear.onAppear { width = geometry.size.width - 40 }.onChange(of: geometry.size.width) { width = $0 - 40 } })
@@ -652,26 +645,26 @@ struct NativePreviewRow: View {
     @Binding var checked: Bool
     @State private var meaning: WordMeaning?
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Button { checked.toggle() } label: {
-                Image(systemName: checked ? "checkmark.square.fill" : "square").font(.wa(17)).foregroundStyle(checked ? WordAheadStyle.teal : Color.gray).frame(width: 40, height: 44).contentShape(Rectangle())
+                Image(systemName: checked ? "checkmark.square.fill" : "square").font(.wa(17)).foregroundStyle(checked ? WordAheadStyle.teal : Color.gray).frame(width: 40, height: 36).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(Text(checked ? "선택 해제" : "단어 저장 선택"))
-            HStack(alignment: .top, spacing: 6) {
-                Text(word).font(.wa(fontSize, .bold)).lineLimit(2).minimumScaleFactor(0.85).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 3)
+            HStack(alignment: .center, spacing: 6) {
+                Text(word).font(.wa(fontSize, .bold)).lineLimit(2).minimumScaleFactor(0.85).frame(maxWidth: .infinity, alignment: .leading)
                 Button { store.speak(word) } label: { Image(systemName: "speaker.wave.2.fill").font(.wa(12)).foregroundStyle(Color(red: 0.33, green: 0.42, blue: 0.44)).frame(width: 28, height: 28).background(Color.gray.opacity(0.06), in: Circle()) }.buttonStyle(.plain).accessibilityLabel(Text("발음"))
             }.frame(width: wordColumnWidth, alignment: .leading)
             Group {
                 if let meaning {
                     if meaning.definition.isEmpty {
-                        Text("뜻을 찾지 못했습니다").font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 3)
+                        Text("뜻을 찾지 못했습니다").font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     } else {
-                        Text(meaning.definition).font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 3)
+                        Text(meaning.definition).font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
-                    Text("저장된 뜻 확인 중…").font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 3)
+                    Text("저장된 뜻 확인 중…").font(.wa(fontSize)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }.buttonStyle(.plain)
-        }.padding(.vertical, 4)
+        }.padding(.vertical, 1)
         .task(id: word) {
             if let quick = store.quickMeaning(word) { meaning = quick }
             meaning = await store.meaning(word, online: true)
@@ -707,7 +700,7 @@ struct NativeSettingsView: View {
             .onChange(of: reminderHour) { h in Task { _ = await StudyReminder.set(enabled: reminderOn, hour: h) } }
             Section("화면") {
                 Picker("앱 표시 언어", selection: $language) {
-                    ForEach([("ko", "한국어"), ("de", "Deutsch"), ("ja", "日本語"), ("zh-Hans", "简体中文"), ("es-MX", "Español"), ("fr-FR", "Français"), ("it", "Italiano"), ("pt-BR", "Português"), ("ru", "Русский"), ("nl", "Nederlands"), ("th", "ไทย")], id: \.0) { item in Text(item.1).tag(item.0) }
+                    ForEach([("ko", "한국어"), ("en", "English"), ("de", "Deutsch"), ("ja", "日本語"), ("zh-Hans", "简体中文"), ("es-MX", "Español"), ("fr-FR", "Français"), ("it", "Italiano"), ("pt-BR", "Português"), ("ru", "Русский"), ("nl", "Nederlands"), ("th", "ไทย")], id: \.0) { item in Text(item.1).tag(item.0) }
                 }
                 Picker("화면 모드", selection: $appearance) { Text("시스템 설정").tag("system"); Text("밝게").tag("light"); Text("어둡게").tag("dark") }
                 Text("자막과 먼저 살펴볼 단어의 글자 크기는 해당 화면에서 조절할 수 있습니다.").font(.footnote).foregroundStyle(.secondary)
