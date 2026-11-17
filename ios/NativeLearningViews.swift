@@ -538,20 +538,21 @@ struct NativeVocabularyView: View {
                 }.accessibilityLabel(Text("단어 정렬"))
             }.padding(.horizontal)
             GeometryReader { geometry in
-                let wordColumnWidth = min(170, max(125, (geometry.size.width - 60) * 0.43))
+                let wordColumnWidth = min(170, max(125, (geometry.size.width - 82) * 0.43))
                 VStack(spacing: 0) {
                     HStack(spacing: 8) {
+                        Color.clear.frame(width: 34, height: 1)
                         Text("단어").frame(width: wordColumnWidth, alignment: .leading)
                         Text("뜻").frame(maxWidth: .infinity, alignment: .leading)
-                        Color.clear.frame(width: 24, height: 1)
                     }.font(.wa(12, .bold)).foregroundStyle(.secondary).padding(.horizontal, 16).padding(.vertical, 6)
                     Divider().padding(.horizontal, 16)
             List {
                 if filtered.isEmpty { Text("저장한 단어가 없습니다.").foregroundStyle(.secondary) }
                 ForEach(filtered) { word in
-                    HStack(alignment: .top, spacing: 8) {
-                        HStack(alignment: .top, spacing: 6) {
-                            Text(word.id).font(.wa(16, .bold)).lineLimit(2).minimumScaleFactor(0.85).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 3)
+                    HStack(alignment: .center, spacing: 8) {
+                        Button { store.mark(word.id, known: !word.known) } label: { Image(systemName: word.known ? "checkmark.square.fill" : "square").font(.wa(17)).foregroundStyle(word.known ? WordAheadStyle.teal : Color.gray).frame(width: 34, height: 36, alignment: .leading).contentShape(Rectangle()) }.buttonStyle(.plain).accessibilityLabel(Text(word.known ? "익히는 중으로 변경" : "알고 있는 단어로 변경"))
+                        HStack(alignment: .center, spacing: 6) {
+                            Text(word.id).font(.wa(16, .bold)).lineLimit(2).minimumScaleFactor(0.85).frame(maxWidth: .infinity, alignment: .leading)
                             Button { store.speak(word.id) } label: { Image(systemName: "speaker.wave.2.fill").font(.wa(12)).foregroundStyle(WordAheadStyle.teal).frame(width: 28, height: 28).background(Color.gray.opacity(0.06), in: Circle()) }.buttonStyle(.plain).accessibilityLabel(Text("발음"))
                         }.frame(width: wordColumnWidth, alignment: .leading)
                         Group {
@@ -560,9 +561,8 @@ struct NativeVocabularyView: View {
                             } else {
                                 Text(word.definition).font(.wa(16)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                             }
-                        }.padding(.top, 3)
-                        Button { store.mark(word.id, known: !word.known) } label: { Image(systemName: word.known ? "checkmark.square.fill" : "square").font(.wa(19)).frame(width: 44, height: 44).contentShape(Rectangle()) }.buttonStyle(.plain).foregroundStyle(WordAheadStyle.teal).accessibilityLabel(Text(word.known ? "익히는 중으로 변경" : "알고 있는 단어로 변경"))
-                    }.padding(.vertical, 4).listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)).swipeActions { Button("삭제", role: .destructive) { store.removeWord(word.id) } }
+                        }
+                    }.padding(.vertical, 1).listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)).swipeActions { Button("삭제", role: .destructive) { store.removeWord(word.id) } }
                     .task(id: word.id) {
                         if word.definition.isEmpty {
                             let meaning = await store.meaning(word.id, online: false)
@@ -600,7 +600,7 @@ struct NativePreviewView: View {
                 let wordColumnWidth = min(170, max(125, (availableWidth - 28) * 0.43))
                 VStack(spacing: 0) {
                     HStack(spacing: 8) {
-                        Text("").frame(width: 40)
+                        Text("").frame(width: 34)
                         Text("단어").font(.wa(12, .bold)).foregroundStyle(.secondary).frame(width: wordColumnWidth, alignment: .leading)
                         Text("뜻").font(.wa(12, .bold)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     }.padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
@@ -647,7 +647,7 @@ struct NativePreviewRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             Button { checked.toggle() } label: {
-                Image(systemName: checked ? "checkmark.square.fill" : "square").font(.wa(17)).foregroundStyle(checked ? WordAheadStyle.teal : Color.gray).frame(width: 40, height: 36).contentShape(Rectangle())
+                Image(systemName: checked ? "checkmark.square.fill" : "square").font(.wa(17)).foregroundStyle(checked ? WordAheadStyle.teal : Color.gray).frame(width: 34, height: 36, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(Text(checked ? "선택 해제" : "단어 저장 선택"))
             HStack(alignment: .center, spacing: 6) {
                 Text(word).font(.wa(fontSize, .bold)).lineLimit(2).minimumScaleFactor(0.85).frame(maxWidth: .infinity, alignment: .leading)
