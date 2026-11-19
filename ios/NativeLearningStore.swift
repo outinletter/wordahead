@@ -25,6 +25,15 @@ struct TranscriptLine: Identifiable {
     let start: Double?
     var estimated = false
     var sharedTimestamp = false
+    var lastSentence = ""
+}
+struct SavedSentence: Identifiable {
+    var data: [String: Any]
+    var id: String { data["id"] as? String ?? "" }
+    var text: String { data["text"] as? String ?? "" }
+    var source: String { data["source"] as? String ?? "" }
+    var added: Double { data["added"] as? Double ?? 0 }
+    var start: Double? { data["start"] as? Double }
 }
 struct WordMeaning: Identifiable {
     let id: String
@@ -50,6 +59,7 @@ final class NativeLearningStore: ObservableObject {
     @Published var videos: [LearningVideo] = []
     @Published var words: [LearningWord] = []
     @Published var known: Set<String> = []
+    @Published var sentences: [SavedSentence] = []
     @Published var loaded = false
     @Published var error: String?
     @Published var sharedURL = ""
@@ -68,7 +78,6 @@ final class NativeLearningStore: ObservableObject {
     init(location: URL? = nil) {
         self.location = location ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("WordAheadNative/learning.json")
         speaker.delegate = speakerCoordinator
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
         Task { [dictionary] in await dictionary.warmUp() }
         if FileManager.default.fileExists(atPath: self.location.path) {
@@ -126,6 +135,7 @@ final class NativeLearningStore: ObservableObject {
         videos = (document["wa-videos"] as? [[String: Any]] ?? []).filter { $0["id"] is String }.map { LearningVideo(data: $0) }
         words = (document["wa-saved"] as? [[String: Any]] ?? []).filter { $0["word"] is String }.map { LearningWord(data: $0) }
         known = Set(document["wa-known-words"] as? [String] ?? []).union(words.filter(\.known).map(\.id))
+        sentences = (document["wa-sentences"] as? [[String: Any]] ?? []).filter { $0["id"] is String }.map { SavedSentence(data: $0) }
     }
     private func write() throws {
         try FileManager.default.createDirectory(at: location.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -136,6 +146,7 @@ final class NativeLearningStore: ObservableObject {
         document["wa-videos"] = videos.map(\.data)
         document["wa-saved"] = words.map(\.data)
         document["wa-known-words"] = known.sorted()
+        document["wa-sentences"] = sentences.map(\.data)
         do { try write() } catch { self.error = "저장하지 못했습니다: \(error.localizedDescription)" }
     }
     func save(_ meaning: WordMeaning, context: String = "", source: String = "") {
@@ -159,6 +170,56 @@ final class NativeLearningStore: ObservableObject {
             }
             mark(word, known: true)
         }
+    }
+    static func sentenceID(_ text: String) -> String { text.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }.joined(separator: " ") }
+    func isSentenceSaved(_ text: String) -> Bool { let id = Self.sentenceID(text); return sentences.contains { $0.id == id } }
+    @discardableResult func toggleSentence(_ text: String, source: String, start: Double? = nil, videoID: String = "") -> Bool {
+        let id = Self.sentenceID(text)
+        if let index = sentences.firstIndex(where: { $0.id == id }) { sentences.remove(at: index); persist(); return false }
+        var data: [String: Any] = ["id": id, "text": text, "source": source, "videoId": videoID, "added": Date().timeIntervalSince1970 * 1000]
+        if let start { data["start"] = start }
+        sentences.insert(SavedSentence(data: data), at: 0)
+        persist(); Haptic.success(); return true
+    }
+    func savedSentences(in line: String) -> [String] { sentences.map(\.text).filter { line.contains($0) || $0.contains(line) } }
+    func removeSentences(in line: String) { let ids = Set(savedSentences(in: line).map(Self.sentenceID)); sentences.removeAll { ids.contains($0.id) }; persist() }
+    // Expand a dragged fragment to the whole sentence (previous terminator to next terminator), even across caption groups.
+    func fullSentence(_ fragment: String, in video: LearningVideo) -> String {
+        func normalize(_ value: String) -> String { value.replacingOccurrences(of: ">>", with: " ").replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines) }
+        let text = normalize(video.text), part = normalize(fragment)
+        guard !part.isEmpty, let found = text.range(of: part), let regex = try? NSRegularExpression(pattern: "[.!?][\"'”’)\\]]*(?=\\s|$)") else { return part }
+        let whole = text as NSString, from = NSRange(found, in: text)
+        let abbreviation = try? NSRegularExpression(pattern: "(?:\\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)|\\b[A-Z])\\.$", options: .caseInsensitive)
+        let ends = regex.matches(in: text, range: NSRange(location: 0, length: whole.length)).map { NSMaxRange($0.range) }.filter { end in
+            let head = whole.substring(to: end)
+            return abbreviation?.firstMatch(in: head, range: NSRange(location: 0, length: (head as NSString).length)) == nil
+        }
+        var start = ends.last { $0 <= from.location } ?? 0
+        let finish = ends.first { $0 >= NSMaxRange(from) } ?? whole.length
+        while start < finish, let scalar = Unicode.Scalar(whole.character(at: start)), CharacterSet.whitespaces.contains(scalar) { start += 1 }
+        let result = whole.substring(with: NSRange(location: start, length: max(0, finish - start))).trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.count > 500 || result.isEmpty ? part : result
+    }
+    func removeSentence(_ id: String) { sentences.removeAll { $0.id == id }; persist() }
+    private var translations: [String: String] = UserDefaults.standard.dictionary(forKey: "WordAheadSentenceTranslations") as? [String: String] ?? [:]
+    func cachedTranslation(_ sentence: String) -> String? { translations[Self.language + ":" + Self.sentenceID(sentence)] }
+    func translation(_ sentence: String) async -> String? {
+        let language = Self.language
+        guard language != "en" else { return nil }
+        let key = language + ":" + Self.sentenceID(sentence)
+        if let cached = translations[key] { return cached }
+        let query = String(sentence.prefix(480))
+        let codes = ["zh-Hans": "zh-CN", "es-MX": "es", "fr-FR": "fr"]
+        guard var components = URLComponents(string: "https://api.mymemory.translated.net/get") else { return nil }
+        components.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "langpair", value: "en|" + (codes[language] ?? language))]
+        guard let address = components.url?.absoluteString, let response = try? await dictionary.handle(["action": "online", "url": address]), let text = response["json"] as? String, let data = text.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], (object["responseStatus"] as? Int ?? Int(object["responseStatus"] as? String ?? "") ?? 200) == 200,
+              let body = object["responseData"] as? [String: Any], let translated = (body["translatedText"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !translated.isEmpty,
+              !translated.uppercased().contains("MYMEMORY WARNING"), translated.caseInsensitiveCompare(query) != .orderedSame else { return nil }
+        if translations.count > 3000 { translations = [:] }
+        translations[key] = translated
+        UserDefaults.standard.set(translations, forKey: "WordAheadSentenceTranslations")
+        return translated
     }
     func removeWord(_ word: String) { words.removeAll { $0.id == word }; persist() }
     func removeVideo(_ id: String) { videos.removeAll { $0.id == id }; persist() }
@@ -305,6 +366,16 @@ final class NativeLearningStore: ObservableObject {
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let body = object["responseData"] as? [String: Any], let translated = body["translatedText"] as? String else { return nil }
         return WordMeaning(id: word, definition: translated)
     }
+    private func isBasic(_ word: String) -> Bool {
+        if basic.contains(word) { return true }
+        var stems: [String] = []
+        if word.hasSuffix("ies"), word.count > 4 { stems.append(String(word.dropLast(3)) + "y") }
+        for suffix in ["ing", "ed", "es", "s", "ly", "er", "est", "d"] where word.count > suffix.count + 2 && word.hasSuffix(suffix) {
+            let stem = String(word.dropLast(suffix.count)); stems += [stem, stem + "e"]
+            if stem.count > 2 && stem.last == stem.dropLast().last { stems.append(String(stem.dropLast())) }
+        }
+        return stems.contains { basic.contains($0) }
+    }
     func previewWords(_ video: LearningVideo) -> [String] {
         let tokens = video.text.lowercased().replacingOccurrences(of: "’", with: "'").components(separatedBy: CharacterSet.letters.union(CharacterSet(charactersIn: "'-")).inverted).map(Self.key).filter { $0.count > 2 }
         let counts = Dictionary(tokens.map { ($0, 1) }, uniquingKeysWith: +)
@@ -324,7 +395,7 @@ final class NativeLearningStore: ObservableObject {
         return Set(tokens).filter { word in
             let base = word.hasSuffix("'s") ? String(word.dropLast(2)) : word
             let contraction = word.range(of: "^(?:(?:i|you|he|she|it|we|they|that|there|here|who|what|where|when|how)'(?:m|re|s|ve|ll|d)|(?:is|are|was|were|have|has|had|do|does|did|ca|could|wo|would|sha|should|must|need|might|dare)n't|let's)$", options: .regularExpression) != nil
-            return word.range(of: "^[a-z][a-z'-]*$", options: .regularExpression) != nil && !pronouns.contains(base) && !basic.contains(base) && !contraction && !known.contains(word) && !(base.contains("-") && base.split(separator: "-").allSatisfy { basic.contains(String($0)) })
+            return word.range(of: "^[a-z][a-z'-]*$", options: .regularExpression) != nil && !pronouns.contains(base) && !isBasic(base) && !contraction && !known.contains(word) && !(base.contains("-") && base.split(separator: "-").allSatisfy { isBasic(String($0)) })
         }.sorted { score($0) == score($1) ? $0 < $1 : score($0) > score($1) }
     }
     // Keep the previous reader's sentence/turn boundaries and five-line grouping.
@@ -382,17 +453,18 @@ final class NativeLearningStore: ObservableObject {
             } else { merged.append(cue) }
         }
         let within = fits ?? { text, _ in text.count <= 210 }
-        var groups: [Cue] = [], pending: Cue?, sentence: [Cue] = []
-        func flush() { if let pending { groups.append(pending) }; pending = nil }
+        var groups: [Cue] = [], pending: Cue?, sentence: [Cue] = [], pendingSentences = 0
+        func flush() { if let pending { groups.append(pending) }; pending = nil; pendingSentences = 0 }
         func finishSentence() {
             guard !sentence.isEmpty else { return }
             let text = sentence.map(\.text).joined(separator: " ")
+            if pending != nil && pendingSentences >= 3 { flush() }
             if let value = pending, !within(value.text + " " + text, value.start) { flush() }
             for piece in sentence {
                 if let value = pending, !within(value.text + " " + piece.text, value.start) { flush() }
                 if pending == nil { pending = piece } else { pending!.text += " " + piece.text }
             }
-            sentence = []
+            pendingSentences += 1; sentence = []
         }
         for (index, cue) in merged.enumerated() {
             if let previous = sentence.last ?? pending, boundary(previous, cue) { finishSentence(); flush() }
@@ -421,10 +493,17 @@ final class NativeLearningStore: ObservableObject {
                 if let value, !clean(value).isEmpty { lines.append(TranscriptLine(id: lines.count, text: clean(value), start: nil)) }
             }
         } else {
-            lines = groups.sorted { $0.start < $1.start }.enumerated().map { TranscriptLine(id: $0.offset, text: $0.element.text, start: $0.element.start, estimated: $0.element.estimated, sharedTimestamp: $0.element.shared) }
+            lines = groups.sorted { $0.start < $1.start }.enumerated().map { TranscriptLine(id: $0.offset, text: $0.element.text, start: $0.element.start, estimated: $0.element.estimated, sharedTimestamp: $0.element.shared, lastSentence: Self.lastSentence($0.element.text)) }
         }
         lineCache[cacheKey] = (video.text, lines)
         return lines
+    }
+    static func lastSentence(_ text: String) -> String {
+        var last = text
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { value, _, _, _ in
+            if let value, value.trimmingCharacters(in: .whitespacesAndNewlines).count > 1 { last = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        }
+        return last
     }
     func position(_ id: String) -> Double { (document["nativePositions"] as? [String: Double])?[id] ?? 0 }
     func setPosition(_ id: String, time: Double) {
@@ -439,7 +518,7 @@ final class NativeLearningStore: ObservableObject {
         } catch { self.error = "구매 처리를 완료하지 못했습니다: \(error.localizedDescription)" }
     }
     func reset() {
-        videos = []; words = []; known = []; document = ["version": 1]; meaningCache = [:]; lineCache = [:]; persist()
+        videos = []; words = []; known = []; sentences = []; document = ["version": 1]; meaningCache = [:]; lineCache = [:]; persist()
         Task { await subscription.resetLearningHistory() }
     }
     func backup() throws -> Data { try JSONSerialization.data(withJSONObject: ["app": "WordAhead", "version": 1, "knownWords": known.sorted()], options: [.sortedKeys]) }

@@ -282,6 +282,7 @@ private struct CaptionFrameKey: PreferenceKey {
 struct NativeReaderView: View {
     @ObservedObject var store: NativeLearningStore
     let videoID: String
+    var startAt: Double? = nil
     @AppStorage("nativeAppLanguage") private var language = "ko"
     @AppStorage("nativeReaderFontSize") private var fontSize = 20.0
     @State private var selected: WordMeaning?
@@ -295,6 +296,7 @@ struct NativeReaderView: View {
     @State private var pendingAlignment: Int?
     @StateObject private var scrollReference = NativeScrollReference()
     @State private var showTools = false
+    @State private var toast: String?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dismiss) private var dismiss
@@ -356,6 +358,9 @@ struct NativeReaderView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .overlay(alignment: .top) {
+            if let toast { Text(LocalizedStringKey(toast)).font(.wa(13, .semibold)).foregroundStyle(.white).padding(.horizontal, 14).padding(.vertical, 8).background(Color.black.opacity(0.8), in: Capsule()).padding(.top, 70).transition(.opacity) }
+        }
         .fullScreenCover(isPresented: $showPreview) {
             if let video {
                 NativePreviewView(store: store, video: video)
@@ -365,7 +370,7 @@ struct NativeReaderView: View {
         }
         .task {
             guard let video else { return }
-            if let id = video.youtubeID { player = NativePlayerModel(videoID: id, start: store.position(videoID)) }
+            if let id = video.youtubeID { player = NativePlayerModel(videoID: id, start: startAt ?? store.position(videoID)); if let startAt { player?.command("seek", value: startAt) } }
             if video.text.isEmpty, let id = video.youtubeID {
                 loading = true; defer { loading = false }
                 do { _ = try await store.importYouTube("https://youtu.be/\(id)") } catch { failure = error.localizedDescription }
@@ -373,7 +378,10 @@ struct NativeReaderView: View {
         }
         .onDisappear { if let player { player.command("pause"); store.setPosition(videoID, time: player.time) } }
         .onChange(of: scenePhase) { phase in
-            if phase == .background, let player { player.command("pause"); store.setPosition(videoID, time: player.time) }
+            if phase == .background, let player {
+                store.setPosition(videoID, time: player.time)
+                if player.isPlaying { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { player.command("play") } }
+            }
             else if phase == .active { player?.command("resume") }
         }
     }
@@ -383,6 +391,11 @@ struct NativeReaderView: View {
         if loading { ProgressView("자막을 가져오는 중…").padding() }
         if let failure { VStack { Text(failure).font(.footnote); NavigationLink("자막 직접 입력") { NativeImportView(store: store, initialURL: video.youtubeID.map { "https://youtu.be/\($0)" } ?? "") } }.padding() }
         transcript(video)
+    }
+    private func saveSentence(_ line: TranscriptLine) {
+        let saved = store.toggleSentence(line.text, source: video?.title ?? "", start: line.start, videoID: videoID)
+        withAnimation { toast = saved ? "문장을 저장했어요" : "문장 저장을 취소했어요" }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation { toast = nil } }
     }
     private func header(_ video: LearningVideo) -> some View {
         HStack(spacing: 4) {
@@ -408,12 +421,16 @@ struct NativeReaderView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: fontSize * 0.35) {
                         ForEach(lines) { line in
-                            NativeTranscriptText(text: line.text, fontSize: fontSize, known: store.known, saved: Set(store.words.map(\.id)), start: line.start, estimated: line.estimated, onSeek: { if let start = line.start { player?.command("seek", value: start) } }) { word in
+                            VStack(alignment: .leading, spacing: 3) {
+                            NativeTranscriptText(text: line.text, fontSize: fontSize, known: store.known, saved: Set(store.words.map(\.id)), start: line.start, estimated: line.estimated, onSeek: { if let start = line.start { player?.command("seek", value: start) } }, onStamp: { saveSentence(line) }, savedSentences: store.savedSentences(in: line.text)) { word in
                                 selectedLine = line.id
                                 withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
                                     selected = store.quickMeaning(word) ?? WordMeaning(id: word, definition: line.text)
                                 }
                             }
+                            if !line.lastSentence.isEmpty { NativeLineTranslation(store: store, sentence: line.lastSentence, fontSize: fontSize) }
+                            }
+                            .overlay(alignment: .topTrailing) { if !store.savedSentences(in: line.text).isEmpty { Button { store.removeSentences(in: line.text); withAnimation { toast = "문장 저장을 취소했어요" }; DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation { toast = nil } } } label: { Image(systemName: "bookmark.fill").font(.wa(15)).foregroundStyle(WordAheadStyle.teal).frame(width: 36, height: 30) }.buttonStyle(.plain).accessibilityLabel(Text("문장 저장 취소")) } }
                             .padding(.leading, activeLine == line.id ? 9 : 0)
                             .background(alignment: .leading) { if activeLine == line.id { Rectangle().fill(WordAheadStyle.teal).frame(width: 3) } }
                             .background(activeLine == line.id ? (scheme == .dark ? Color(red: 0.149, green: 0.282, blue: 0.239) : Color(red: 0.91, green: 0.957, blue: 0.937)) : Color.clear, in: RoundedRectangle(cornerRadius: 4))
@@ -446,6 +463,27 @@ struct NativeReaderView: View {
                 }
             }
         }
+    }
+}
+
+private struct NativeLineTranslation: View {
+    @ObservedObject var store: NativeLearningStore
+    let sentence: String
+    let fontSize: Double
+    @State private var text: String?
+    var body: some View {
+        Group { if let text = text ?? store.cachedTranslation(sentence) { Text(text).font(.wa(max(12, fontSize - 4))).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading) } }
+            .task(id: sentence) { if text == nil, store.cachedTranslation(sentence) == nil { text = await store.translation(sentence) } }
+    }
+}
+
+private struct SentenceTranslation: View {
+    @ObservedObject var store: NativeLearningStore
+    let sentence: String
+    @State private var text: String?
+    var body: some View {
+        Group { if let text = text ?? store.cachedTranslation(sentence) { Text(text).font(.wa(14)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) } }
+            .task(id: sentence) { if text == nil, store.cachedTranslation(sentence) == nil { text = await store.translation(sentence) } }
     }
 }
 
@@ -519,6 +557,8 @@ struct NativeVocabularyView: View {
     var initialFilter = "learning"
     @State private var filter = "learning"
     @State private var query = ""
+    @State private var mode = "words"
+    private var sentenceList: [SavedSentence] { query.isEmpty ? store.sentences : store.sentences.filter { $0.text.localizedCaseInsensitiveContains(query) } }
     @AppStorage("nativeVocabularySort") private var sort = "script"
     private var filtered: [LearningWord] {
         let values = store.words.filter { (filter == "all" || ($0.known ? "known" : "learning") == filter) && (query.isEmpty || $0.id.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query)) }
@@ -526,16 +566,28 @@ struct NativeVocabularyView: View {
     }
     var body: some View {
         VStack {
+            Picker("보기", selection: $mode) { Text("단어").tag("words"); Text("문장").tag("sentences") }.pickerStyle(.segmented).padding(.horizontal)
+            if mode == "sentences" {
+                List {
+                    if sentenceList.isEmpty { Text("저장한 문장이 없습니다. 자막의 시간(▶)을 누르면 저장할 수 있어요. 한 번 더 누르면 취소돼요.").foregroundStyle(.secondary) }
+                    ForEach(sentenceList) { item in
+                        let target = store.videos.first { $0.id == (item.data["videoId"] as? String ?? "") } ?? store.videos.first { $0.title == item.source }
+                        NavigationLink { if let target { NativeReaderView(store: store, videoID: target.id, startAt: item.start) } } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.text).font(.wa(16)).fixedSize(horizontal: false, vertical: true)
+                            if !item.source.isEmpty || item.start != nil {
+                                let seconds = Int(item.start ?? 0)
+                                let stamp = item.start == nil ? "" : (seconds >= 3600 ? String(format: "▶ %d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60) : String(format: "▶ %d:%02d", seconds / 60, seconds % 60))
+                                Text([stamp, item.source].filter { !$0.isEmpty }.joined(separator: " · ")).font(.wa(12)).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            SentenceTranslation(store: store, sentence: item.text)
+                        }
+                        }.disabled(target == nil).padding(.vertical, 4).swipeActions { Button("삭제", role: .destructive) { store.removeSentence(item.id) } }
+                    }
+                }.listStyle(.plain)
+            } else {
             HStack(spacing: 10) {
                 Picker("단어 상태", selection: $filter) { Text("익히는 중").tag("learning"); Text("알고 있어요").tag("known") }.pickerStyle(.segmented)
-                Menu {
-                    Picker("단어 정렬", selection: $sort) {
-                        Text("스크립트 순서").tag("script")
-                        Text("알파벳 순서").tag("alphabetical")
-                    }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down").frame(width: 34, height: 32).background(WordAheadStyle.teal.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
-                }.accessibilityLabel(Text("단어 정렬"))
             }.padding(.horizontal)
             GeometryReader { geometry in
                 let wordColumnWidth = min(170, max(125, (geometry.size.width - 82) * 0.43))
@@ -573,7 +625,8 @@ struct NativeVocabularyView: View {
             }.listStyle(.plain).environment(\.defaultMinListRowHeight, 0)
                 }
             }
-        }.tint(WordAheadStyle.teal).navigationTitle("내 단어장").searchable(text: $query, prompt: "단어 또는 한글 뜻 검색")
+            }
+        }.tint(WordAheadStyle.teal).navigationTitle("내 단어장").toolbar { if mode == "words" { ToolbarItem(placement: .topBarTrailing) { Menu { Picker("단어 정렬", selection: $sort) { Text("스크립트 순서").tag("script"); Text("알파벳 순서").tag("alphabetical") } } label: { Image(systemName: "arrow.up.arrow.down") }.accessibilityLabel(Text("단어 정렬")) } } }.searchable(text: $query, prompt: "단어 또는 한글 뜻 검색")
         .onAppear { filter = initialFilter == "known" ? "known" : "learning" }
     }
 }

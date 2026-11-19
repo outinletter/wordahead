@@ -225,3 +225,11 @@
 "연습용 예시 자막" = "Sample captions";
 "전체" = "All";
 "%lld개 중 %lld개를 기억했어요" = "You remembered %2$lld of %1$lld";
+"보기" = "View";
+"문장" = "Sentences";
+"문장을 저장했어요" = "Sentence saved";
+"문장 저장을 취소했어요" = "Sentence removed";
+"문장 저장" = "Save sentence";
+"이미 저장한 문장이에요" = "Sentence already saved";
+"문장 저장 취소" = "Remove saved sentence";
+"저장한 문장이 없습니다. 자막의 시간(▶)을 누르면 저장할 수 있어요. 한 번 더 누르면 취소돼요." = "No saved sentences. Tap the time (▶) of a caption to save it. Tap again to cancel.";

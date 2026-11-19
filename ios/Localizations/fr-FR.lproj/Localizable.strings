@@ -223,3 +223,11 @@
 "알고 있어요로 표시" = "Marquer comme « Je connais »";
 "표시하지 않고 닫기" = "Fermer sans marquer";
 "선택한 단어 %lld개를 알고 있는 단어로 한글 뜻과 함께 저장합니다." = "%lld mots sélectionnés seront enregistrés comme connus, avec leur sens en coréen.";
+"보기" = "Affichage";
+"문장" = "Phrases";
+"문장을 저장했어요" = "Phrase enregistrée";
+"문장 저장을 취소했어요" = "Phrase supprimée";
+"문장 저장" = "Enregistrer la phrase";
+"이미 저장한 문장이에요" = "Phrase déjà enregistrée";
+"문장 저장 취소" = "Retirer la phrase enregistrée";
+"저장한 문장이 없습니다. 자막의 시간(▶)을 누르면 저장할 수 있어요. 한 번 더 누르면 취소돼요." = "Aucune phrase enregistrée. Touchez l'heure (▶) d'un sous-titre pour l'enregistrer. Touchez à nouveau pour annuler.";

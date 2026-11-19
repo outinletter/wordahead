@@ -223,3 +223,11 @@
 "알고 있어요로 표시" = "Segna come «Lo so»";
 "표시하지 않고 닫기" = "Chiudi senza segnare";
 "선택한 단어 %lld개를 알고 있는 단어로 한글 뜻과 함께 저장합니다." = "%lld parole selezionate verranno salvate come già conosciute, con il significato in coreano.";
+"보기" = "Vista";
+"문장" = "Frasi";
+"문장을 저장했어요" = "Frase salvata";
+"문장 저장을 취소했어요" = "Frase rimossa";
+"문장 저장" = "Salva frase";
+"이미 저장한 문장이에요" = "Frase già salvata";
+"문장 저장 취소" = "Rimuovi frase salvata";
+"저장한 문장이 없습니다. 자막의 시간(▶)을 누르면 저장할 수 있어요. 한 번 더 누르면 취소돼요." = "Nessuna frase salvata. Tocca l'orario (▶) di un sottotitolo per salvarlo. Tocca di nuovo per annullare.";

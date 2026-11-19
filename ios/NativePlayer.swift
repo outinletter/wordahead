@@ -48,12 +48,43 @@ struct NativeYouTubePlayer: UIViewRepresentable {
         let config = WKWebViewConfiguration(); config.allowsInlineMediaPlayback = true; config.mediaTypesRequiringUserActionForPlayback = []
         config.userContentController.add(context.coordinator, name: "youtubeState")
         config.userContentController.add(context.coordinator, name: "youtubeSettings")
+        config.userContentController.addUserScript(Self.frameScript())
         let web = WKWebView(frame: .zero, configuration: config); web.navigationDelegate = context.coordinator; web.uiDelegate = context.coordinator; web.scrollView.isScrollEnabled = false
         model.web = web
         if let url = Bundle.main.url(forResource: "youtube-player", withExtension: "html", subdirectory: "Web"), let html = try? String(contentsOf: url), let base = URL(string: "https://com.addvalue.wordahead/") { web.loadHTMLString(html, baseURL: base) }
         return web
     }
     func updateUIView(_ view: WKWebView, context: Context) {}
+    static let rateKey = "WordAheadPlaybackRate"
+    // Runs inside every frame (including the YouTube iframe): keeps the page "visible" so playback survives screen-off,
+    // and pins the video's playback rate to the user's last explicit choice (a change counts as explicit only right after a touch).
+    static func frameScript() -> WKUserScript {
+        let saved = UserDefaults.standard.double(forKey: rateKey)
+        let source = """
+        (function(){
+          try{
+            Object.defineProperty(document,'hidden',{get:function(){return false},configurable:true});
+            Object.defineProperty(document,'visibilityState',{get:function(){return 'visible'},configurable:true});
+            ['visibilitychange','webkitvisibilitychange','pagehide','freeze'].forEach(function(n){
+              window.addEventListener(n,function(e){e.stopImmediatePropagation()},true);
+              document.addEventListener(n,function(e){e.stopImmediatePropagation()},true);
+            });
+          }catch(e){}
+          var desired=\(saved > 0 ? String(saved) : "null"),lastTouch=0,internal=false;
+          ['touchstart','touchend','pointerdown','pointerup','mousedown','click'].forEach(function(n){window.addEventListener(n,function(){lastTouch=Date.now()},true)});
+          function video(){return document.querySelector('video')}
+          function apply(){var v=video();if(v&&desired&&Math.abs(v.playbackRate-desired)>0.001){internal=true;v.playbackRate=desired;setTimeout(function(){internal=false},50)}}
+          document.addEventListener('ratechange',function(e){
+            var v=e.target;if(!(v instanceof HTMLVideoElement)||internal)return;
+            if(Date.now()-lastTouch<3000){desired=v.playbackRate;try{window.webkit.messageHandlers.youtubeState.postMessage({rate:desired})}catch(x){}}
+            else if(desired){apply()}
+          },true);
+          ['loadedmetadata','play','playing','seeked'].forEach(function(n){document.addEventListener(n,apply,true)});
+          setInterval(function(){if(Date.now()-lastTouch>3000)apply()},400);
+        })();
+        """
+        return WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+    }
     static func dismantleUIView(_ view: WKWebView, coordinator: Coordinator) {
         coordinator.model.command("pause"); view.stopLoading()
         for name in ["youtubeState", "youtubeSettings"] { view.configuration.userContentController.removeScriptMessageHandler(forName: name) }
@@ -63,13 +94,13 @@ struct NativeYouTubePlayer: UIViewRepresentable {
         let model: NativePlayerModel
         init(_ model: NativePlayerModel) { self.model = model }
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { model.didLoad() }
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { model.ready = false; webView.reload() }
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
             guard let body = message.body as? [String: Any] else { return }
             if message.name == "youtubeSettings" { UserDefaults.standard.set(body, forKey: "WordAheadYouTubeSettings") }
             else if body["videoId"] == nil, let rate = body["rate"] as? Double, rate > 0 {
-                var saved = UserDefaults.standard.dictionary(forKey: "WordAheadYouTubeSettings") ?? [:]
-                saved["rate"] = rate
-                UserDefaults.standard.set(saved, forKey: "WordAheadYouTubeSettings")
+                UserDefaults.standard.set(rate, forKey: NativeYouTubePlayer.rateKey)
+                controller.removeAllUserScripts(); controller.addUserScript(NativeYouTubePlayer.frameScript())
             }
             else if body["videoId"] as? String == model.videoID {
                 if let time = body["time"] as? Double, time.isFinite { model.time = time }
@@ -122,14 +153,14 @@ struct NativeTranscriptText: UIViewRepresentable {
     var start: Double? = nil
     var estimated = false
     var onSeek: (() -> Void)? = nil
+    var onStamp: (() -> Void)? = nil
+    var savedSentences: [String] = []
     let onWord: (String) -> Void
     @Environment(\.colorScheme) private var colorScheme
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> UITextView {
-        let view = UITextView(); view.isEditable = false; view.isScrollEnabled = false; view.backgroundColor = .clear; view.delegate = context.coordinator
+        let view = UITextView(); view.isEditable = false; view.isSelectable = false; view.isScrollEnabled = false; view.backgroundColor = .clear; view.delegate = context.coordinator
         view.textContainerInset = .zero; view.textContainer.lineFragmentPadding = 0
-        let press = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.selectSentence(_:)))
-        press.minimumPressDuration = 0.45; view.addGestureRecognizer(press)
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
@@ -137,13 +168,12 @@ struct NativeTranscriptText: UIViewRepresentable {
     }
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
-        let state = RenderState(text: text, fontSize: fontSize, known: known, saved: saved, start: start, estimated: estimated, dark: colorScheme == .dark)
+        let state = RenderState(text: text, fontSize: fontSize, known: known, saved: saved, start: start, estimated: estimated, dark: colorScheme == .dark, savedSentences: savedSentences)
         guard context.coordinator.rendered != state else { return }; context.coordinator.rendered = state
         let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
         let paragraph = NSMutableParagraphStyle(); paragraph.minimumLineHeight = fontSize * 1.65; paragraph.maximumLineHeight = fontSize * 1.65
         let ink = UIColor { $0.userInterfaceStyle == .dark ? UIColor(red: 0.93, green: 0.96, blue: 0.95, alpha: 1) : UIColor(red: 0.09, green: 0.13, blue: 0.15, alpha: 1) }
-        view.linkTextAttributes = [.foregroundColor: ink]
-        let value = NSMutableAttributedString(string: "")
+                let value = NSMutableAttributedString(string: "")
         if let start {
             let attachment = NSTextAttachment()
             let seconds = max(0, Int(start))
@@ -164,19 +194,20 @@ struct NativeTranscriptText: UIViewRepresentable {
             }
             attachment.bounds = CGRect(x: 0, y: (font.capHeight - stampHeight) / 2, width: width, height: stampHeight)
             let button = NSMutableAttributedString(attachment: attachment)
-            button.addAttribute(.link, value: URL(string: "wordahead-seek://time")!, range: NSRange(location: 0, length: 1))
+            button.addAttribute(NativeTranscriptText.action, value: URL(string: "wordahead-seek://time")!, range: NSRange(location: 0, length: 1))
             value.append(button); value.append(NSAttributedString(string: " ", attributes: [.font: font]))
         }
         let prefix = value.length
         value.append(NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: ink, .paragraphStyle: paragraph, .kern: -0.15]))
         value.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: value.length))
+        for sentence in savedSentences { if let range = text.range(of: sentence) ?? (sentence.contains(text) ? text.startIndex..<text.endIndex : nil) { value.addAttribute(.backgroundColor, value: UIColor(red: 0.95, green: 0.68, blue: 0.2, alpha: 0.22), range: NSRange(location: prefix + NSRange(range, in: text).location, length: NSRange(range, in: text).length)) } }
         if let regex = try? NSRegularExpression(pattern: "[A-Za-z]+(?:['’-][A-Za-z]+)*") {
             for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
                 guard let range = Range(match.range, in: text) else { continue }
                 let word = String(text[range]).lowercased()
                 var components = URLComponents(); components.scheme = "wordahead-word"; components.host = "lookup"; components.queryItems = [URLQueryItem(name: "word", value: word)]
                 let location = NSRange(location: prefix + match.range.location, length: match.range.length)
-                if let url = components.url { value.addAttribute(.link, value: url, range: location) }
+                if let url = components.url { value.addAttribute(NativeTranscriptText.action, value: url, range: location) }
                 if saved.contains(word) && !known.contains(word) { value.addAttribute(.backgroundColor, value: UIColor(red: 0.09, green: 0.54, blue: 0.47, alpha: 0.18), range: location) }
             }
         }
@@ -186,9 +217,10 @@ struct NativeTranscriptText: UIViewRepresentable {
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
         guard let width = proposal.width else { return nil }; return uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
     }
+    static let action = NSAttributedString.Key("wordahead.action")
     struct RenderState: Equatable {
         let text: String; let fontSize: Double; let known: Set<String>; let saved: Set<String>
-        let start: Double?; let estimated: Bool; let dark: Bool
+        let start: Double?; let estimated: Bool; let dark: Bool; let savedSentences: [String]
     }
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: NativeTranscriptText
@@ -196,7 +228,7 @@ struct NativeTranscriptText: UIViewRepresentable {
         var rendered: RenderState?
         init(_ parent: NativeTranscriptText) { self.parent = parent }
         func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
-            if URL.scheme == "wordahead-seek" { parent.onSeek?() }
+            if URL.scheme == "wordahead-seek" { parent.onStamp?() }
             else if let word = URLComponents(url: URL, resolvingAgainstBaseURL: false)?.queryItems?.first?.value { parent.onWord(word) }
             return false
         }
@@ -205,17 +237,13 @@ struct NativeTranscriptText: UIViewRepresentable {
             let point = recognizer.location(in: textView)
             let adjustedPoint = CGPoint(x: point.x - textView.textContainerInset.left, y: point.y - textView.textContainerInset.top)
             let index = textView.layoutManager.characterIndex(for: adjustedPoint, in: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
-            guard index < textView.textStorage.length else { return }
+            guard index < textView.textStorage.length else { parent.onSeek?(); return }
             let glyphRect = textView.layoutManager.boundingRect(forGlyphRange: NSRange(location: index, length: 1), in: textView.textContainer)
-            guard glyphRect.contains(adjustedPoint) else { return }
-            if let url = textView.textStorage.attribute(.link, at: index, effectiveRange: nil) as? URL {
-                if url.scheme == "wordahead-seek" { parent.onSeek?() }
+            guard glyphRect.contains(adjustedPoint) else { parent.onSeek?(); return }
+            if let url = textView.textStorage.attribute(NativeTranscriptText.action, at: index, effectiveRange: nil) as? URL {
+                if url.scheme == "wordahead-seek" { parent.onStamp?() }
                 else if let word = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value { parent.onWord(word) }
-            }
-        }
-        @objc func selectSentence(_ recognizer: UILongPressGestureRecognizer) {
-            guard recognizer.state == .began, let view = recognizer.view as? UITextView else { return }
-            view.becomeFirstResponder(); view.selectedRange = NSRange(location: prefix, length: parent.text.utf16.count)
+            } else { parent.onSeek?() }
         }
     }
 }
