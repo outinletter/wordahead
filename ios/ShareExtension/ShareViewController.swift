@@ -50,7 +50,7 @@ final class ShareViewController: UIViewController {
             let candidate = (item as? URL)?.absoluteString ?? (item as? String)
             DispatchQueue.main.async {
                 guard let self else{return}
-                if let candidate,let url=self.youtubeURL(in:candidate){self.sharedURL=url;self.message.text=url.absoluteString;self.openButton.isEnabled=true}
+                if let candidate,let url=self.youtubeURL(in:candidate){self.sharedURL=url;self.message.text=url.absoluteString;self.saveLink()}
                 else{self.load(from:providers,index:index+1)}
             }
         }
@@ -73,8 +73,19 @@ final class ShareViewController: UIViewController {
     @objc private func saveLink(){
         guard let sharedURL,let defaults=UserDefaults(suiteName:"group.com.addvalue.wordahead") else{showInvalid();return}
         defaults.set(sharedURL.absoluteString,forKey:"pendingYouTubeURL")
-        message.text="WordAhead에 저장했어요. 앱을 열면 영상이 바로 시작됩니다."
+        message.text="WordAhead를 여는 중…"
         openButton.isEnabled=false
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.45){[weak self] in self?.extensionContext?.completeRequest(returningItems:nil)}
+        var components=URLComponents(); components.scheme="wordahead"; components.host="open"; components.queryItems=[URLQueryItem(name:"url",value:sharedURL.absoluteString)]
+        if let appURL=components.url { openApp(appURL) }
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.3){[weak self] in self?.extensionContext?.completeRequest(returningItems:nil)}
+    }
+
+    private func openApp(_ url:URL){
+        var responder:UIResponder?=self
+        while let current=responder {
+            if let application=current as? UIApplication { application.open(url,options:[:],completionHandler:nil); return }
+            responder=current.next
+        }
+        extensionContext?.open(url,completionHandler:nil)
     }
 }

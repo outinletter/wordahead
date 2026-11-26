@@ -164,6 +164,9 @@ struct NativeTranscriptText: UIViewRepresentable {
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+        let hold = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleHold(_:)))
+        hold.minimumPressDuration = 0.45
+        view.addGestureRecognizer(hold); tap.require(toFail: hold)
         return view
     }
     func updateUIView(_ view: UITextView, context: Context) {
@@ -228,7 +231,7 @@ struct NativeTranscriptText: UIViewRepresentable {
         var rendered: RenderState?
         init(_ parent: NativeTranscriptText) { self.parent = parent }
         func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
-            if URL.scheme == "wordahead-seek" { parent.onStamp?() }
+            if URL.scheme == "wordahead-seek" { parent.onSeek?() }
             else if let word = URLComponents(url: URL, resolvingAgainstBaseURL: false)?.queryItems?.first?.value { parent.onWord(word) }
             return false
         }
@@ -241,9 +244,19 @@ struct NativeTranscriptText: UIViewRepresentable {
             let glyphRect = textView.layoutManager.boundingRect(forGlyphRange: NSRange(location: index, length: 1), in: textView.textContainer)
             guard glyphRect.contains(adjustedPoint) else { parent.onSeek?(); return }
             if let url = textView.textStorage.attribute(NativeTranscriptText.action, at: index, effectiveRange: nil) as? URL {
-                if url.scheme == "wordahead-seek" { parent.onStamp?() }
+                if url.scheme == "wordahead-seek" { parent.onSeek?() }
                 else if let word = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first?.value { parent.onWord(word) }
             } else { parent.onSeek?() }
+        }
+        @objc func handleHold(_ recognizer: UILongPressGestureRecognizer) {
+            guard recognizer.state == .began, let textView = recognizer.view as? UITextView else { return }
+            let point = recognizer.location(in: textView)
+            let index = textView.layoutManager.characterIndex(for: point, in: textView.textContainer, fractionOfDistanceBetweenInsertionPoints: nil)
+            guard index < textView.textStorage.length,
+                  textView.layoutManager.boundingRect(forGlyphRange: NSRange(location: index, length: 1), in: textView.textContainer).contains(point),
+                  (textView.textStorage.attribute(NativeTranscriptText.action, at: index, effectiveRange: nil) as? URL)?.scheme == "wordahead-seek" else { return }
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            parent.onStamp?()
         }
     }
 }

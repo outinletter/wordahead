@@ -297,6 +297,7 @@ struct NativeReaderView: View {
     @StateObject private var scrollReference = NativeScrollReference()
     @State private var showTools = false
     @State private var toast: String?
+    @State private var restoredRead = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) private var scheme
     @Environment(\.dismiss) private var dismiss
@@ -359,7 +360,7 @@ struct NativeReaderView: View {
             }
         }
         .overlay(alignment: .top) {
-            if let toast { Text(LocalizedStringKey(toast)).font(.wa(13, .semibold)).foregroundStyle(.white).padding(.horizontal, 14).padding(.vertical, 8).background(Color.black.opacity(0.8), in: Capsule()).padding(.top, 70).transition(.opacity) }
+            if let toast { Label(LocalizedStringKey(toast), systemImage: toast == "문장을 저장했어요" ? "checkmark.circle.fill" : "bookmark.slash").font(.wa(14, .semibold)).foregroundStyle(.primary).padding(.horizontal, 16).padding(.vertical, 10).background(.regularMaterial, in: Capsule()).shadow(color: .black.opacity(0.15), radius: 8, y: 2).padding(.top, 70).transition(.move(edge: .top).combined(with: .opacity)) }
         }
         .fullScreenCover(isPresented: $showPreview) {
             if let video {
@@ -394,6 +395,7 @@ struct NativeReaderView: View {
     }
     private func saveSentence(_ line: TranscriptLine) {
         let saved = store.toggleSentence(line.text, source: video?.title ?? "", start: line.start, videoID: videoID)
+        if saved { UIPasteboard.general.string = line.text }
         withAnimation { toast = saved ? "문장을 저장했어요" : "문장 저장을 취소했어요" }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { withAnimation { toast = nil } }
     }
@@ -442,6 +444,7 @@ struct NativeReaderView: View {
                 }.coordinateSpace(name: "transcript")
                 .onPreferenceChange(CaptionFrameKey.self) { values in
                     frames = values
+                    if player == nil, restoredRead, let top = values.filter({ $0.value.maxY > 0 }).min(by: { $0.value.minY < $1.value.minY })?.key { UserDefaults.standard.set(top, forKey: "readLine.\(videoID)") }
                     if let id = pendingAlignment, let frame = values[id], scrollReference.view != nil {
                         pendingAlignment = nil
                         scrollReference.align(top: frame.minY, offset: fontSize * 1.65 * 2 + 12)
@@ -457,6 +460,11 @@ struct NativeReaderView: View {
                         pendingAlignment = next
                         proxy.scrollTo(next, anchor: .top)
                     }
+                }
+                .onAppear {
+                    guard player == nil, !restoredRead else { return }
+                    let saved = UserDefaults.standard.integer(forKey: "readLine.\(videoID)")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { if saved > 0 { proxy.scrollTo(saved, anchor: .top) }; restoredRead = true }
                 }
                 .onChange(of: geometry.size.height) { height in
                     if selected != nil, let id = selectedLine, let frame = frames[id], frame.maxY > height - 12 { proxy.scrollTo(id, anchor: .bottom) }
